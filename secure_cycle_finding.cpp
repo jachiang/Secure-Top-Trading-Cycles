@@ -200,8 +200,9 @@ std::vector<Ciphertext<DCRTPoly>> evalMatrixExp(std::vector<Ciphertext<DCRTPoly>
     }
     // n x n Matrix exponentiation. Compute result row by row.
     std::vector<Ciphertext<DCRTPoly>> enc_rows_res; 
+    std::cout << "Matrix exponentation: " << std::endl; 
     for (size_t row=0 ; row < matrix_dim ; ++row){    
-        std::cout << "Matrix exponentiation, computing row " << row+1 << " of " << matrix_dim << " ... " << std::flush;
+        std::cout << "Computing row " << row+1 << " of " << matrix_dim << " ... " << std::flush;
         // Iterate through all element indices: for example - i,j,k,l 
         //    (row, i), (row, i+1), (row, i+2) - enc(row),      shifted by i.
         // *  (i, j)  , (i+1, j)  , (i+2, j)   - enc(j'th col), shifted by i. 
@@ -527,7 +528,7 @@ int main(int argc, char* argv[]) {
     cryptoContext->Enable(LEVELEDSHE);
     cryptoContext->Enable(ADVANCEDSHE);
 
-    std::cout << "\nPlaintext modulus p = " << cryptoContext->GetCryptoParameters()->GetPlaintextModulus() << std::endl;
+    std::cout << "Plaintext modulus p = " << cryptoContext->GetCryptoParameters()->GetPlaintextModulus() << std::endl;
     std::cout << "Cyclotomic order n = " << cryptoContext->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder() / 2
               << std::endl;
     // std::cout << "log2 q = "
@@ -584,10 +585,9 @@ int main(int argc, char* argv[]) {
     std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefList;
     std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefTransposedList;
     for (int user=0; user < n; ++user) { 
-        // std::vector<int64_t> userPref = {4, 1, 3, 0, 2}; 
         std::vector<std::vector<int64_t>> userPrefMatrix;
         for (int j=0; j < n; ++j) {
-            std::vector<int64_t> row(n,0); row[userInputs[user][j]] = 1; // TODO: This seems wrong...
+            std::vector<int64_t> row(n,0); row[userInputs[user][j]] = 1;
             userPrefMatrix.push_back(row);
         }   
         // Transpose user preference-permutation matrix.
@@ -597,7 +597,7 @@ int main(int argc, char* argv[]) {
         for (int j=0; j < n; ++j) { for (int k=0; k < n; ++k) {
             if (userPrefMatrix[j][k] == 1) { userPrefMatrixTransposed[k][j] = 1; break; }
         }}
-        // Encrypt user preference matrix and transposed preference matrix.
+        // Encrypt user preference and transposed preference permutation matrix.
         std::vector<Ciphertext<DCRTPoly>> encUserPref;
         std::vector<Ciphertext<DCRTPoly>> encUserPrefTransposed;
         for (int j=0; j<n ; ++j){ 
@@ -637,7 +637,9 @@ int main(int argc, char* argv[]) {
     // Init output ciphertext.
     auto enc_output = encNegOnes;
 
+
     // TODO: loop over n rounds.
+
 
     // (1) Update adjacency matix.
     //----------------------------------------------------------
@@ -689,7 +691,7 @@ int main(int argc, char* argv[]) {
     enc_u = evalNotEqualZero(enc_u,cryptoContext,initNotEqualZero); 
     
     processingTime = TOC(t);
-    std::cout << "Adjacency matrix time: " << processingTime << "ms" << std::endl;
+    std::cout << "Matrix exponentiation time: " << processingTime << "ms" << std::endl;
 
     //----------------------------------------------------------
     // (3) Update user availability and outputs.
