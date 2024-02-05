@@ -635,12 +635,11 @@ int main(int argc, char* argv[]) {
     //==========================================================
 
     // Init output ciphertext.
-    auto enc_output = encNegOnes;
-
+    auto enc_output = encNegOnes; // -1 output => not on cycle.
 
     // TODO: loop over n rounds.
 
-
+    //----------------------------------------------------------
     // (1) Update adjacency matix.
     //----------------------------------------------------------
     
