@@ -200,22 +200,22 @@ std::vector<Ciphertext<DCRTPoly>> evalMatrixExp(std::vector<Ciphertext<DCRTPoly>
     }
     // n x n Matrix exponentiation. Compute result row by row.
     std::vector<Ciphertext<DCRTPoly>> enc_rows_res; 
-    std::cout << "Matrix exponentation: " << std::endl; 
-    for (size_t row=0 ; row < matrix_dim ; ++row){    
-        std::cout << "Computing row " << row+1 << " of " << matrix_dim << " ... " << std::flush;
+    std::cout << "Matrix exponentation ... " << std::flush; 
+
         // Iterate through all element indices: for example - i,j,k,l 
         //    (row, i), (row, i+1), (row, i+2) - enc(row),      shifted by i.
         // *  (i, j)  , (i+1, j)  , (i+2, j)   - enc(j'th col), shifted by i. 
         // *  (j, k) ,  (j, k+1)  , (j, k+2)   - enc(j'th row), shifted by k.
         // *  (k, l)  , (k+1, l)  , (k+2, l)   - enc(j'th col), shifted by k. 
         // *  (l, 0) ,  (l, 1)    , (l, 2)     - enc(l'th row).
-        std::vector<Ciphertext<DCRTPoly>> enc_add_container;
+        std::vector<std::vector<Ciphertext<DCRTPoly>>> enc_add_per_row_container;
+        std::vector<Ciphertext<DCRTPoly>> initEncVec;
+         for (size_t row=0 ; row < matrix_dim ; ++row){ enc_add_per_row_container.push_back(initEncVec); }
         int indices_dim = exponent-1; vectorIter indices(matrix_dim,indices_dim); bool iterContinue = true;  
         while (iterContinue) { 
             // std::cout << indices.value() << std::endl;
             std::vector<Ciphertext<DCRTPoly>> enc_mult_container; // container for factors of multiplicative terms.
-            // Push (row, i), (row, i+1), (row, i+2) to container.
-            enc_mult_container.push_back(enc_rows_shifted[row][indices.value()[0]]);
+            
             for (int i = 1; i < (indices_dim-2); ++i) { 
                 // Push (i, j)  , (i+1, j),   (i+2, j) to container.   
                 enc_mult_container.push_back(enc_cols_shifted[indices.value()[i]][indices.value()[i-1]]); 
@@ -228,14 +228,23 @@ std::vector<Ciphertext<DCRTPoly>> evalMatrixExp(std::vector<Ciphertext<DCRTPoly>
             enc_mult_container.push_back(enc_rows_shifted[indices.value().back()][0]);
             // Multiply elements in enc_mult_container, add ciphertext to the enc_add_container.
             auto enc_mult = cryptoContext->EvalMultMany(enc_mult_container);
-            // cryptoContext->ModReduceInPlace(enc_mult);
-            enc_add_container.push_back(enc_mult);
+
+           // Multiply enc_mult with (row, i), (row, i+1), (row, i+2) ... for all rows.
+            for (size_t row=0 ; row < matrix_dim ; ++row){
+                enc_add_per_row_container[row].push_back(cryptoContext->EvalMult(enc_mult,
+                                                                                 enc_rows_shifted[row][indices.value()[0]]));
+            }
+
             iterContinue = indices.iterate(); // Continue iterating through i,j,k,l ...
         }
-        // Sum all ciphertexts in enc_add_container, add result to enc(row)
-        enc_rows_res.push_back(cryptoContext->EvalAddMany(enc_add_container));
+
+        // Sum all additive terms in enc_add_per_row_container[row], add result to each row encryption.
+        for (size_t row=0 ; row < matrix_dim ; ++row){  
+            enc_rows_res.push_back(cryptoContext->EvalAddMany(enc_add_per_row_container[row])); 
+        }
+        
         std::cout << "completed." << std::endl;
-    }
+    // }
     return enc_rows_res;
 }
 
@@ -669,7 +678,7 @@ int main(int argc, char* argv[]) {
     }
 
     processingTime = TOC(t);
-    std::cout << "Adjacency matrix update time: " << processingTime << "ms" << std::endl;
+    std::cout << "Online part 1 - Adjacency matrix update time: " << processingTime << "ms" << std::endl;
 
     // Refresh ciphertexts.
     for (int row=0; row < n; ++row){ refreshInPlace(encAdjacencyMatrix[row],n, keyPair, cryptoContext); } 
@@ -690,7 +699,7 @@ int main(int argc, char* argv[]) {
     enc_u = evalNotEqualZero(enc_u,cryptoContext,initNotEqualZero); 
     
     processingTime = TOC(t);
-    std::cout << "Matrix exponentiation time: " << processingTime << "ms" << std::endl;
+    std::cout << "Online part 2 - Matrix exponentiation time: " << processingTime << "ms" << std::endl;
 
     //----------------------------------------------------------
     // (3) Update user availability and outputs.
@@ -721,7 +730,7 @@ int main(int argc, char* argv[]) {
                                                  cryptoContext->EvalMult(enc_output_reduced, encNegOnes));
 
     processingTime = TOC(t);
-    std::cout << "User availability & output update time: " << processingTime << "ms" << std::endl;
+    std::cout << "Online part 3 - User availability & output update time: " << processingTime << "ms" << std::endl;
     
     // Print output vector (-1 means not on cycle).
     Plaintext plaintext;
