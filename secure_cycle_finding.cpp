@@ -525,7 +525,7 @@ int main(int argc, char* argv[]) {
     parameters.SetPlaintextModulus(chosen_ptxtmodulus);
     // p = 65537, depth = 13 -> "Please provide a q and a m satisfying: (q-1)/m is an integer. The values of primeModulus = 65537 and m = 131072 do not."
     // Fermats thm works for p = 786433, dep = 20.
-    parameters.SetMultiplicativeDepth(12);
+    parameters.SetMultiplicativeDepth(9);
     parameters.SetMaxRelinSkDeg(3);
 
 
@@ -653,6 +653,11 @@ int main(int argc, char* argv[]) {
     //----------------------------------------------------------
     
     TIC(t);
+    auto res = cryptoContext->EvalMult(encOnes,encOnes);
+    processingTime = TOC(t);
+    std::cout << "Multiplication: " << processingTime << "ms" << std::endl;
+
+    TIC(t);
 
     std::vector<Ciphertext<DCRTPoly>> encAdjacencyMatrix;
 
@@ -705,13 +710,16 @@ int main(int argc, char* argv[]) {
     // (3) Update user availability and outputs.
     //----------------------------------------------------------
 
+    // Refresh ciphertexts.
+    refreshInPlace(enc_u,n,keyPair, cryptoContext);
+
     TIC(t);
 
     // t: Compute current preference index for all users in packed ciphertext.
     std::vector<Ciphertext<DCRTPoly>> enc_elements;
     for (int user=0; user < n; ++user){ 
         auto enc_t_user = cryptoContext->EvalInnerProduct(encAdjacencyMatrix[user], encRange, 
-                                                     encAdjacencyMatrix.size());
+                                                          encAdjacencyMatrix.size());
         enc_t_user = cryptoContext->EvalMult(enc_t_user, initMatrixVecMult.encMaskFirst()); // TODO: 
         cryptoContext->ModReduceInPlace(enc_t_user);
         enc_elements.push_back(cryptoContext->EvalRotate(enc_t_user,-user));
@@ -737,7 +745,6 @@ int main(int argc, char* argv[]) {
     cryptoContext->Decrypt(keyPair.secretKey, enc_output, &plaintext); 
     plaintext->SetLength(n); auto payload = plaintext->GetPackedValue();
     std::cout << "Cycle finding result: " << payload << std::endl;
-    
 
     // TODO: end loop.
     
