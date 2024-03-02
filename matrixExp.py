@@ -82,12 +82,9 @@ class indicesIter:
     
     def step_(self, slot):
         # Case 0: Highest idx cannot be incremented further.
-        # if (slot == vectorIter_.size()-1 && (vectorIter_[slot] == mod_-1)) { return false; }
         if slot == len(self.indices)-1 and self.indices[slot] == self.mod-1:
             return False
         # Case 1: Increment & carry. 
-        # else if (vectorIter_[slot] == mod_ - 1) {
-        # vectorIter_[slot] = 0; if (iterate_(slot+1)) { return true; } else { return false; }}
         elif self.indices[slot] == self.mod -1:
             self.indices[slot] = 0
             if self.step_(slot+1):
@@ -95,55 +92,66 @@ class indicesIter:
             else:
                 return False
         # Case 2: Increment.
-        # else { vectorIter_[slot] = vectorIter_[slot]+1; return true; }
         else:
             self.indices[slot] =  self.indices[slot]+1
             return True
 
 
-matrix = [[1,2,3],
-          [4,5,6],
-          [7,8,9]]
 
-multLookup = MultLookup(matrix)
+def main():
 
-# Compute exponentiation result for single Matrix element.
-res,col = [],[]
-for i in range(len(matrix)):
-    col.append(0)
-for i in range(len(matrix)):
-    res.append(col)
+    # Set matrix to be exponentiated.
+    matrix = [[1,2,3],
+              [4,5,6],
+              [7,8,9]]
+    exp = 5
 
-exp = 5
-matrixIter = indicesIter(len(matrix),2)
-contMatrixIter = True
-while(contMatrixIter):
-    r = matrixIter.indices[0]
-    c = matrixIter.indices[1]
-    # Fill container for summation.
-    sumContainer = []
-    sumIter = indicesIter(len(matrix),exp-1)
-    contSummation = True
-    while(contSummation):
-        # Compute multiplication M_ri M_ij M_jk M_kl M_lc 
-        # Construct index pairs (r,i), (i,j), ...
-        indexPairList = []
-        indexPairList.append((r,sumIter.indices[0]))
-        for slot in range(len(sumIter.indices)-1):
-            idxPair = (sumIter.indices[slot],sumIter.indices[slot+1])
-            indexPairList.append(idxPair)
-        indexPairList.append((sumIter.indices[-1],c))
-        # Add to sumContainer
-        sumContainer.append(multLookup.retrieveOrCompute(indexPairList))
-        contSummation = sumIter.step()
-    # Compute final summation for matrix term M_rc
-    res[r][c] = reduce(lambda x, y: x + y, sumContainer)
-    print((r,c,),res[r][c])
-    contMatrixIter = matrixIter.step()
+    # Multiplications computed without lookup.
+    multsNoLookup = 0
 
-# Don't know why this is incorrect.
-print(res)
+    # Initialize resulting matrix.
+    res = []
+    for i in range(len(matrix)):
+        col = []
+        for i in range(len(matrix)):
+            col.append(0)
+        res.append(col)
 
-# 121824 149688	177552
-# 275886 338985	402084
-# 429948 528282	626616
+    # Initialize lookup table for multiplications
+    multLookup = MultLookup(matrix)
+
+    # Compute matrix exponentiation element-wise.
+    matrixIter = indicesIter(len(matrix),2)
+    contMatrixIter = True
+    while(contMatrixIter):
+        (r,c) = matrixIter.indices[0], matrixIter.indices[1]
+        # Fill container with mult. terms for summation over
+        # all i,j,k,l in sum  M_ri M_ij M_jk M_kl M_lc 
+        sumContainer = []
+        sumIter = indicesIter(len(matrix),exp-1)
+        contSummation = True
+        while(contSummation):
+            # Compute multiplication M_ri M_ij M_jk M_kl M_lc 
+            # Construct index pairs (r,i), (i,j), ...
+            indexPairList = []
+            indexPairList.append((r,sumIter.indices[0]))
+            for slot in range(len(sumIter.indices)-1):
+                idxPair = (sumIter.indices[slot],sumIter.indices[slot+1])
+                indexPairList.append(idxPair)
+            indexPairList.append((sumIter.indices[-1],c))
+            # Add to sumContainer
+            sumContainer.append(multLookup.retrieveOrCompute(indexPairList))
+            # Capture mults required
+            multsNoLookup += exp-1
+            contSummation = sumIter.step()
+        # Compute final summation for matrix term M_rc
+        res[r][c] = reduce(lambda x, y: x + y, sumContainer)
+        contMatrixIter = matrixIter.step()
+
+    print(res)
+    print("Mults with lookup:", multLookup.computedMults)
+    print("Mults without lookup:", multsNoLookup)
+
+
+if __name__ == "__main__":
+    main()
