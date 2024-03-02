@@ -4,9 +4,14 @@ class MultLookup:
     def __init__(self, matrix):
         self.table = {}
         self.matrix = matrix
+        self.computedMults = 0
 
-    # Note: indexPairList is a list of int pairs.
-    def retrieve(self, indexPairList):
+    def resetCtr(self):
+        self.computedMults = 0
+
+    # Note: indexPairList is a list of int pairs
+    # which reference position of a matrix element.
+    def retrieveOrCompute(self, indexPairList):
         # Bitdecompose the number of pairs in indexPairList.
         binStr = bin(len(indexPairList))[2:] 
         binList = list(map(int, binStr))
@@ -15,6 +20,7 @@ class MultLookup:
         key = hash(tuple(sorted(indexPairList)))
         value = self.table.get(key)
         if value:
+            self.tableHit = True
             return value 
         else:
             # If there is no hit, populate container with elements for multiplication:
@@ -34,8 +40,8 @@ class MultLookup:
                 else:
                     indexPairListLeft = indexPairList[:int(len(indexPairList)/2)]
                     indexPairListRight = indexPairList[int(len(indexPairList)/2):]
-                    leftElement = self.retrieve(indexPairListLeft)
-                    rightElement =  self.retrieve(indexPairListRight)
+                    leftElement = self.retrieveOrCompute(indexPairListLeft)
+                    rightElement =  self.retrieveOrCompute(indexPairListRight)
                 elemContainer.append(leftElement)
                 elemContainer.append(rightElement)
             # Case 1: If number of matrix elements referenced in indexPairList is *not* power of two.
@@ -54,23 +60,90 @@ class MultLookup:
                             # Append batch of elements (of the 2-power size) to container.
                             elementIdxPairs = indexPairListCopy[-2**i:]
                             indexPairListCopy = indexPairListCopy[:-2**i]
-                            elemContainer.append(self.retrieve(elementIdxPairs)) 
+                            elemContainer.append(self.retrieveOrCompute(elementIdxPairs)) 
             # Multiply elements in elemContainer
+            self.computedMults += len(elemContainer)-1
             res = reduce(lambda x, y: x * y, elemContainer)
             # Add to hash table.
             newKey = hash(tuple(sorted(indexPairList)))
             self.table[newKey] = res
             return res
-            
-Test = MultLookup([[1,2,3],
-                   [4,5,6],
-                   [7,8,9]])
 
-# 5, 9, 6, 8
-print(Test.retrieve([(1,1),(2,2),(1,2),(2,1),(0,0)]))
+class indicesIter:
+    def __init__(self, modulus, slots):
+        self.mod = modulus        
+        self.indices = []
+        for i in range(slots):
+            self.indices.append(0)
+        self.computedMults = 0
+
+    def step(self):
+        return self.step_(0)
+    
+    def step_(self, slot):
+        # Case 0: Highest idx cannot be incremented further.
+        # if (slot == vectorIter_.size()-1 && (vectorIter_[slot] == mod_-1)) { return false; }
+        if slot == len(self.indices)-1 and self.indices[slot] == self.mod-1:
+            return False
+        # Case 1: Increment & carry. 
+        # else if (vectorIter_[slot] == mod_ - 1) {
+        # vectorIter_[slot] = 0; if (iterate_(slot+1)) { return true; } else { return false; }}
+        elif self.indices[slot] == self.mod -1:
+            self.indices[slot] = 0
+            if self.step_(slot+1):
+                return True
+            else:
+                return False
+        # Case 2: Increment.
+        # else { vectorIter_[slot] = vectorIter_[slot]+1; return true; }
+        else:
+            self.indices[slot] =  self.indices[slot]+1
+            return True
 
 
+matrix = [[1,2,3],
+          [4,5,6],
+          [7,8,9]]
 
+multLookup = MultLookup(matrix)
 
-# Input:
-# ...
+# Compute exponentiation result for single Matrix element.
+res,col = [],[]
+for i in range(len(matrix)):
+    col.append(0)
+for i in range(len(matrix)):
+    res.append(col)
+
+exp = 5
+matrixIter = indicesIter(len(matrix),2)
+contMatrixIter = True
+while(contMatrixIter):
+    r = matrixIter.indices[0]
+    c = matrixIter.indices[1]
+    # Fill container for summation.
+    sumContainer = []
+    sumIter = indicesIter(len(matrix),exp-1)
+    contSummation = True
+    while(contSummation):
+        # Compute multiplication M_ri M_ij M_jk M_kl M_lc 
+        # Construct index pairs (r,i), (i,j), ...
+        indexPairList = []
+        indexPairList.append((r,sumIter.indices[0]))
+        for slot in range(len(sumIter.indices)-1):
+            idxPair = (sumIter.indices[slot],sumIter.indices[slot+1])
+            indexPairList.append(idxPair)
+        indexPairList.append((sumIter.indices[-1],c))
+        # Add to sumContainer
+        sumContainer.append(multLookup.retrieveOrCompute(indexPairList))
+        contSummation = sumIter.step()
+    # Compute final summation for matrix term M_rc
+    res[r][c] = reduce(lambda x, y: x + y, sumContainer)
+    print((r,c,),res[r][c])
+    contMatrixIter = matrixIter.step()
+
+# Don't know why this is incorrect.
+print(res)
+
+# 121824 149688	177552
+# 275886 338985	402084
+# 429948 528282	626616
