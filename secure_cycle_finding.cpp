@@ -98,26 +98,52 @@ public:
     std::vector<int> vectorIter_;
 };
 
+// Class to initialize rotation keys and masks.
+class InitRotsMasks {
+public:
+    InitRotsMasks(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int slots) :
+        slots(slots) 
+    {
+        // (1) Generate rotation keys for |slots| number of steps.
+        std::vector<int32_t> rotIndices;
+        for (size_t i = 0; i <= slots; i++) { rotIndices.push_back(-i); rotIndices.push_back(i);}
+        cryptoContext->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
+        // (2)Generate Eval Sum Key for EvalInnerProduct.
+        cryptoContext->EvalSumKeyGen(keyPair.secretKey);
+        // (3) Generate ciphertext masks for extraction of ciphertext slot values.
+        for (size_t elem=0 ; elem < slots ; ++elem){ 
+            std::vector<int64_t> mask(slots,0); mask[elem] = 1;
+            encMasks_.push_back(cryptoContext->Encrypt(keyPair.publicKey,
+                                                       cryptoContext->MakePackedPlaintext(mask)));
+        }
+    }
+
+    std::vector<Ciphertext<DCRTPoly>> encMasks() { return encMasks_; }
+    const int slots;
+
+private:
+    std::vector<Ciphertext<DCRTPoly>> encMasks_;
+};
+
 
 // Helper method for matrix exponentiation: transforms row encryptions to encryptions of columns.
 // Multiplicative depth: 1
 // (Key required to generate rotation keys).
 std::vector<Ciphertext<DCRTPoly>> rowToColEnc(std::vector<Ciphertext<DCRTPoly>> &enc_rows, 
                                               CryptoContext<DCRTPoly> &cryptoContext,
-                                              KeyPair<DCRTPoly> keyPair,
-                                              std::vector<Ciphertext<DCRTPoly>> encMasks) {
+                                              InitRotsMasks InitRotsMasks) {
     // Assumes n x n matrix: n plaintext slots in each row encryption.
     auto n = enc_rows.size();
     // Generate rotation keys.    
-    std::vector<int32_t> rotIndices;
-    for (size_t i = 0; i < n; i++) { rotIndices.push_back(i); rotIndices.push_back(-i); }
-    cryptoContext->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
+    // std::vector<int32_t> rotIndices;
+    // for (size_t i = 0; i < n; i++) { rotIndices.push_back(i); rotIndices.push_back(-i); }
+    // cryptoContext->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
     // Populate column containers with encryptions of isolated matrix elements.
     std::vector<std::vector<Ciphertext<DCRTPoly>>> enc_col_container; 
     for (size_t row=0 ; row < n ; ++row){ 
         for (size_t elem=0 ; elem < n ; ++elem){ 
             // Isolate row element and shift element to corresponding position in column.
-            auto masked_enc_row = cryptoContext->EvalMult(enc_rows[row], encMasks[elem]); // Masked enc(row).
+            auto masked_enc_row = cryptoContext->EvalMult(enc_rows[row], InitRotsMasks.encMasks()[elem]); // Masked enc(row).
             cryptoContext->ModReduceInPlace(masked_enc_row);
             auto enc_elem = cryptoContext->EvalRotate(masked_enc_row, elem - row);
             // Insert isolated column element into column container.
@@ -139,42 +165,14 @@ std::vector<Ciphertext<DCRTPoly>> rowToColEnc(std::vector<Ciphertext<DCRTPoly>> 
     return enc_cols;
 }
 
-std::vector<Ciphertext<DCRTPoly>> evalMatrixSqMul(std::vector<Ciphertext<DCRTPoly>> &enc_rows, 
-                                                int exponent,
-                                                CryptoContext<DCRTPoly> &cryptoContext,
-                                                InitMatrixExp initMatrixExp) {
-    // TODO: init class for key rotation etc.
-    // TODO: generate encrypted columns.
-    // TODO: Square and multiply.
-}
-
-
-class InitMatrixExp {
-public:
-    InitMatrixExp(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int slots) :
-        slots(slots) 
-    {
-        // TODO: assert slots leq plaintext slots in cryptoContext.
-        // Generate rotation keys for |slots| steps.
-        std::vector<int32_t> rotIndices;
-        for (size_t i = 0; i <= slots; i++) { rotIndices.push_back(-i); }
-        cryptoContext->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
-        // Generate encrypted masks.
-        for (size_t elem=0 ; elem < slots ; ++elem){ 
-            // Isolate row element and shift element to corresponding position in column.
-            std::vector<int64_t> mask(slots,0); mask[elem] = 1; // Element mask.
-            encMasks_.push_back(cryptoContext->Encrypt(keyPair.publicKey,
-                                                   cryptoContext->MakePackedPlaintext(mask)));
-        }
-    }
-
-    std::vector<Ciphertext<DCRTPoly>> encMasks() { return encMasks_; }
-
-    const int slots;
-
-private:
-    std::vector<Ciphertext<DCRTPoly>> encMasks_;
-};
+// std::vector<Ciphertext<DCRTPoly>> evalMatrixSqMul(std::vector<Ciphertext<DCRTPoly>> &enc_rows, 
+//                                                 int exponent,
+//                                                 CryptoContext<DCRTPoly> &cryptoContext,
+//                                                 InitMatrixExp initMatrixExp) {
+//     // TODO: init class for key rotation etc.
+//     // TODO: generate encrypted columns.
+//     // TODO: Square and multiply.
+// }
 
 
 // Matrix exponentiation of n x n matrix, encrypted by rows. Multiplicative depth: log(exponent)
@@ -182,14 +180,13 @@ private:
 std::vector<Ciphertext<DCRTPoly>> evalMatrixExp(std::vector<Ciphertext<DCRTPoly>> &enc_rows, 
                                             int exponent,
                                             CryptoContext<DCRTPoly> &cryptoContext,
-                                            KeyPair<DCRTPoly> keyPair,
-                                            InitMatrixExp initMatrixExp) {
+                                            InitRotsMasks initRotsMasks) {
 
     auto matrix_dim = enc_rows.size();
-    assert(initMatrixExp.slots == matrix_dim);
+    assert(initRotsMasks.slots == matrix_dim);
 
     // Generate enc(cols) - rowToColEnc generates rotation keys for context.
-    auto enc_cols = rowToColEnc(enc_rows, cryptoContext, keyPair, initMatrixExp.encMasks());
+    auto enc_cols = rowToColEnc(enc_rows, cryptoContext, initRotsMasks);
 
     // Compute all encrypted rows and columns shifted by 0,1,...,n indices.
     std::vector<std::vector<Ciphertext<DCRTPoly>>> enc_rows_shifted;
@@ -288,13 +285,13 @@ private:
 Ciphertext<DCRTPoly> evalMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &enc_rows, 
                                        Ciphertext<DCRTPoly> &enc_vec,
                                        CryptoContext<DCRTPoly> &cryptoContext,            
-                                       InitMatrixVecMult &initMatrixVecMult) {
+                                       InitRotsMasks &initRotsMasks) {
     // TODO: assert slots in initMatrixVecMult consistent with inputs.
     std::vector<Ciphertext<DCRTPoly>> enc_elements;
     for (size_t row=0 ; row < enc_rows.size() ; ++row){ 
         auto enc_element = cryptoContext->EvalInnerProduct(enc_rows[row], enc_vec, 
                                                            enc_rows.size());
-        auto enc_element_masked = cryptoContext->EvalMult(enc_element, initMatrixVecMult.encMaskFirst());         
+        auto enc_element_masked = cryptoContext->EvalMult(enc_element, initRotsMasks.encMasks()[0]);         
         cryptoContext->ModReduceInPlace(enc_element_masked);
         enc_element = cryptoContext->EvalRotate(enc_element_masked,-row);
         enc_elements.push_back(enc_element);
@@ -305,18 +302,18 @@ Ciphertext<DCRTPoly> evalMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &enc_ro
 // TODO: Requires initMatrixVecMult, initMatrixExp. Move these to separate context.
 Ciphertext<DCRTPoly> evalVecMatrixMult(Ciphertext<DCRTPoly> &enc_vec,
                                        std::vector<Ciphertext<DCRTPoly>> &enc_rows, 
-                                       KeyPair<DCRTPoly> keyPair, // TODO: Only public key required for row to col encryption.
+                                    //    KeyPair<DCRTPoly> keyPair, // TODO: Only public key required for row to col encryption.
                                        CryptoContext<DCRTPoly> &cryptoContext,            
-                                       InitMatrixVecMult &initMatrixVecMult,
-                                       InitMatrixExp &initMatrixExp) {
+                                    //    InitMatrixVecMult &initMatrixVecMult,
+                                       InitRotsMasks &initRotsMasks) {
     // TODO: assert slots in initMatrixVecMult consistent with inputs.
     std::vector<Ciphertext<DCRTPoly>> enc_elements;
     for (size_t row=0 ; row < enc_rows.size() ; ++row){ 
         // Require col encryptions of matrix.
-        auto enc_cols = rowToColEnc(enc_rows,cryptoContext, keyPair, initMatrixExp.encMasks()); 
+        auto enc_cols = rowToColEnc(enc_rows,cryptoContext, initRotsMasks); 
         auto enc_element = cryptoContext->EvalInnerProduct(enc_cols[row], enc_vec, 
                                                            enc_cols.size());
-        auto enc_element_masked = cryptoContext->EvalMult(enc_element, initMatrixVecMult.encMaskFirst());         
+        auto enc_element_masked = cryptoContext->EvalMult(enc_element, initRotsMasks.encMasks()[0]);         
         cryptoContext->ModReduceInPlace(enc_element_masked);
         enc_element = cryptoContext->EvalRotate(enc_element_masked,-row);
         enc_elements.push_back(enc_element);
@@ -371,10 +368,9 @@ public:
 };
 
 Ciphertext<DCRTPoly> evalPrefixMult(Ciphertext<DCRTPoly> &ciphertext,
-                                   int slots, CryptoContext<DCRTPoly> &cryptoContext,
-                                   InitPrefixMult &initPrefixMult) {
+                                   int slots, CryptoContext<DCRTPoly> &cryptoContext) {
     // Assert slots leq rotation keys. 
-    assert(initPrefixMult.slots >= slots);
+    // assert(initRotsMasks.slots >= slots);
 
     // Prefix computation: 
     int levels = std::ceil(std::log2(slots));
@@ -443,8 +439,7 @@ Ciphertext<DCRTPoly> evalPreserveLeadOne(Ciphertext<DCRTPoly> &ciphertext,
     auto encDiffs = cryptoContext->EvalAdd(cryptoContext->EvalMult(ciphertext,initPreserveLeadOne.encNegOnes()),
                                            initPreserveLeadOne.encOnes());
     // y0, y1,..., yn: yi = ith multiplicative prefix.
-    auto encPrefix = evalPrefixMult(encDiffs, initPreserveLeadOne.slots, 
-                                    cryptoContext, initPreserveLeadOne.initPrefixMult);
+    auto encPrefix = evalPrefixMult(encDiffs, initPreserveLeadOne.slots, cryptoContext);
     // x0, x1*y0 ,...,   xn*yn-1
     auto result = cryptoContext->EvalMult(ciphertext,
                                    cryptoContext->EvalAdd(initPreserveLeadOne.encLeadingOne(), 
@@ -630,8 +625,9 @@ int main(int argc, char* argv[]) {
     }
 
     // Server Offline: Precompute encryptions of constants, initialize rotation keys.
-    InitMatrixExp initMatrixExp(cryptoContext, keyPair, userInputs.size());
-    InitMatrixVecMult initMatrixVecMult(cryptoContext, keyPair, userInputs.size());
+    InitRotsMasks initRotsMasks(cryptoContext,keyPair,n);
+    // InitMatrixExp initMatrixExp(cryptoContext, keyPair, userInputs.size());
+    // InitMatrixVecMult initMatrixVecMult(cryptoContext, keyPair, userInputs.size());
     InitPrefixMult initPrefixMult(cryptoContext, keyPair, userInputs.size());
     InitNotEqualZero initNotEqualZero(cryptoContext, keyPair, userInputs.size(), userInputs.size()); // (..., slots, range)
     InitPreserveLeadOne initPreserveLeadOne(cryptoContext,keyPair,n);
@@ -675,13 +671,13 @@ int main(int argc, char* argv[]) {
     for (int user = 0; user < n; ++user){
         // Sort availability according to user preference.
         auto encUserAvailablePref = evalMatrixVecMult(encUserPrefList[user], encUserAvailability,
-                                                      cryptoContext, initMatrixVecMult);
+                                                      cryptoContext, initRotsMasks);
         // Preserve highest, available preference.
         auto encUserFirstAvailablePref = evalPreserveLeadOne(encUserAvailablePref, cryptoContext, initPreserveLeadOne);
 
         // Transpose back to obtain adjacency matrix row.
         encRowsAdjMatrix.push_back(evalMatrixVecMult(encUserPrefTransposedList[user], encUserFirstAvailablePref,
-                                                       cryptoContext, initMatrixVecMult));
+                                                       cryptoContext, initRotsMasks));
     }
 
     std::cout << "Adjacency Matrix: " << std::endl;
@@ -708,13 +704,13 @@ int main(int argc, char* argv[]) {
     // TODO: compute exponentiation (enc(rows),enc(cols))
 
 
-    auto encMatrixExp = evalMatrixExp(encRowsAdjMatrix,n,cryptoContext,keyPair,initMatrixExp); // TODO: access keypair from InitMatrixExp class.
+    auto encMatrixExp = evalMatrixExp(encRowsAdjMatrix,n,cryptoContext,initRotsMasks); // TODO: access keypair from InitMatrixExp class.
     
     // Refresh ciphertexts.
     for (int row=0; row < n; ++row){ refreshInPlace(encMatrixExp[row],n,keyPair, cryptoContext); } 
 
     // u: Derive computed cycle.
-    auto enc_u = evalVecMatrixMult(encOnes,encMatrixExp,keyPair,cryptoContext,initMatrixVecMult,initMatrixExp); // TODO: only publickey required, create dedicated init class.
+    auto enc_u = evalVecMatrixMult(encOnes,encMatrixExp,cryptoContext,initRotsMasks); // TODO: only publickey required, create dedicated init class.
     enc_u = evalNotEqualZero(enc_u,cryptoContext,initNotEqualZero); 
     
     processingTime = TOC(t);
@@ -734,7 +730,7 @@ int main(int argc, char* argv[]) {
     for (int user=0; user < n; ++user){ 
         auto enc_t_user = cryptoContext->EvalInnerProduct(encRowsAdjMatrix[user], encRange, 
                                                           encRowsAdjMatrix.size());
-        enc_t_user = cryptoContext->EvalMult(enc_t_user, initMatrixVecMult.encMaskFirst()); // TODO: 
+        enc_t_user = cryptoContext->EvalMult(enc_t_user, initRotsMasks.encMasks()[0]); // TODO: 
         cryptoContext->ModReduceInPlace(enc_t_user);
         enc_elements.push_back(cryptoContext->EvalRotate(enc_t_user,-user));
     }
