@@ -98,6 +98,7 @@ public:
     std::vector<int> vectorIter_;
 };
 
+
 // Helper method for matrix exponentiation: transforms row encryptions to encryptions of columns.
 // Multiplicative depth: 1
 // (Key required to generate rotation keys).
@@ -136,6 +137,15 @@ std::vector<Ciphertext<DCRTPoly>> rowToColEnc(std::vector<Ciphertext<DCRTPoly>> 
         enc_cols.push_back(cryptoContext->EvalAddMany(enc_col_container[col]));
     }   
     return enc_cols;
+}
+
+std::vector<Ciphertext<DCRTPoly>> evalMatrixSqMul(std::vector<Ciphertext<DCRTPoly>> &enc_rows, 
+                                                int exponent,
+                                                CryptoContext<DCRTPoly> &cryptoContext,
+                                                InitMatrixExp initMatrixExp) {
+    // TODO: init class for key rotation etc.
+    // TODO: generate encrypted columns.
+    // TODO: Square and multiply.
 }
 
 
@@ -525,7 +535,7 @@ int main(int argc, char* argv[]) {
     parameters.SetPlaintextModulus(chosen_ptxtmodulus);
     // p = 65537, depth = 13 -> "Please provide a q and a m satisfying: (q-1)/m is an integer. The values of primeModulus = 65537 and m = 131072 do not."
     // Fermats thm works for p = 786433, dep = 20.
-    parameters.SetMultiplicativeDepth(9);
+    parameters.SetMultiplicativeDepth(12);
     parameters.SetMaxRelinSkDeg(3);
 
 
@@ -659,7 +669,7 @@ int main(int argc, char* argv[]) {
 
     TIC(t);
 
-    std::vector<Ciphertext<DCRTPoly>> encAdjacencyMatrix;
+    std::vector<Ciphertext<DCRTPoly>> encRowsAdjMatrix;
 
     // Generate adjacency matrix for all users.
     for (int user = 0; user < n; ++user){
@@ -670,14 +680,14 @@ int main(int argc, char* argv[]) {
         auto encUserFirstAvailablePref = evalPreserveLeadOne(encUserAvailablePref, cryptoContext, initPreserveLeadOne);
 
         // Transpose back to obtain adjacency matrix row.
-        encAdjacencyMatrix.push_back(evalMatrixVecMult(encUserPrefTransposedList[user], encUserFirstAvailablePref,
+        encRowsAdjMatrix.push_back(evalMatrixVecMult(encUserPrefTransposedList[user], encUserFirstAvailablePref,
                                                        cryptoContext, initMatrixVecMult));
     }
 
     std::cout << "Adjacency Matrix: " << std::endl;
     for (int row=0; row < n; ++row){
         Plaintext plaintext;
-        cryptoContext->Decrypt(keyPair.secretKey, encAdjacencyMatrix[row], &plaintext); 
+        cryptoContext->Decrypt(keyPair.secretKey, encRowsAdjMatrix[row], &plaintext); 
         plaintext->SetLength(n); auto payload = plaintext->GetPackedValue();
         std::cout << payload << std::endl;
     }
@@ -686,7 +696,7 @@ int main(int argc, char* argv[]) {
     std::cout << "Online part 1 - Adjacency matrix update time: " << processingTime << "ms" << std::endl;
 
     // Refresh ciphertexts.
-    for (int row=0; row < n; ++row){ refreshInPlace(encAdjacencyMatrix[row],n, keyPair, cryptoContext); } 
+    for (int row=0; row < n; ++row){ refreshInPlace(encRowsAdjMatrix[row],n, keyPair, cryptoContext); } 
 
     //----------------------------------------------------------
     // (2) Matrix exponentiation for cycle finding.
@@ -694,7 +704,11 @@ int main(int argc, char* argv[]) {
 
     TIC(t);
 
-    auto encMatrixExp = evalMatrixExp(encAdjacencyMatrix,n,cryptoContext,keyPair,initMatrixExp); // TODO: access keypair from InitMatrixExp class.
+    // TODO: get compute encryption of columns.
+    // TODO: compute exponentiation (enc(rows),enc(cols))
+
+
+    auto encMatrixExp = evalMatrixExp(encRowsAdjMatrix,n,cryptoContext,keyPair,initMatrixExp); // TODO: access keypair from InitMatrixExp class.
     
     // Refresh ciphertexts.
     for (int row=0; row < n; ++row){ refreshInPlace(encMatrixExp[row],n,keyPair, cryptoContext); } 
@@ -718,8 +732,8 @@ int main(int argc, char* argv[]) {
     // t: Compute current preference index for all users in packed ciphertext.
     std::vector<Ciphertext<DCRTPoly>> enc_elements;
     for (int user=0; user < n; ++user){ 
-        auto enc_t_user = cryptoContext->EvalInnerProduct(encAdjacencyMatrix[user], encRange, 
-                                                          encAdjacencyMatrix.size());
+        auto enc_t_user = cryptoContext->EvalInnerProduct(encRowsAdjMatrix[user], encRange, 
+                                                          encRowsAdjMatrix.size());
         enc_t_user = cryptoContext->EvalMult(enc_t_user, initMatrixVecMult.encMaskFirst()); // TODO: 
         cryptoContext->ModReduceInPlace(enc_t_user);
         enc_elements.push_back(cryptoContext->EvalRotate(enc_t_user,-user));
