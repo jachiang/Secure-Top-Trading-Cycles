@@ -101,30 +101,41 @@ public:
 
 // Class to initialize rotation keys and masks.
 class InitRotsMasks {
-public:
-    InitRotsMasks(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int slots) :
-        slots(slots) 
-    {
-        // (1) Generate rotation keys for |slots| number of steps.
-        std::vector<int32_t> rotIndices;
-        for (size_t i = 0; i <= slots; i++) { rotIndices.push_back(-i); rotIndices.push_back(i);}
-        cryptoContext->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
-        // (2)Generate Eval Sum Key for EvalInnerProduct.
-        cryptoContext->EvalSumKeyGen(keyPair.secretKey);
-        // (3) Generate ciphertext masks for extraction of ciphertext slot values.
-        for (size_t elem=0 ; elem < slots ; ++elem){ 
-            std::vector<int64_t> mask(slots,0); mask[elem] = 1;
-            encMasks_.push_back(cryptoContext->Encrypt(keyPair.publicKey,
-                                                       cryptoContext->MakePackedPlaintext(mask)));
+    public:
+        InitRotsMasks(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int slots) :
+            slots(slots) 
+        {
+            // (1) Generate rotation keys for |slots| number of steps.
+            std::vector<int32_t> rotIndices;
+            for (size_t i = 0; i <= slots; i++) { rotIndices.push_back(-i); rotIndices.push_back(i);}
+            cryptoContext->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
+            // (2)Generate Eval Sum Key for EvalInnerProduct.
+            cryptoContext->EvalSumKeyGen(keyPair.secretKey);
+            // (3) Generate ciphertext masks for extraction of ciphertext slot values.
+            for (size_t elem=0 ; elem < slots ; ++elem){ 
+                std::vector<int64_t> mask(slots,0); mask[elem] = 1;
+                encMasks_.push_back(cryptoContext->Encrypt(keyPair.publicKey,
+                                                        cryptoContext->MakePackedPlaintext(mask)));
+            }
         }
-    }
 
     std::vector<Ciphertext<DCRTPoly>> encMasks() { return encMasks_; }
     const int slots;
 
-private:
-    std::vector<Ciphertext<DCRTPoly>> encMasks_;
+    private:
+        std::vector<Ciphertext<DCRTPoly>> encMasks_;
 };
+
+// // Container class for encrypted matrix.
+// class EncMatrix {
+
+//     public:
+//         pushBackElemRow(std::vector<Ciphertext<DCRTPoly>> &encElem){
+//             elements.push_back(encElemRow);
+//         }
+
+//         std::vector<std::vector<Ciphertext<DCRTPoly>>> elements;
+// }
 
 
 // Helper method for matrix exponentiation: transforms row encryptions to encryptions of columns.
@@ -165,99 +176,129 @@ std::vector<Ciphertext<DCRTPoly>> rowToColEnc(std::vector<Ciphertext<DCRTPoly>> 
     return encCols;
 }
 
+
 std::vector<Ciphertext<DCRTPoly>> // Row-encrypted output matrix.
     encElem2Rows(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElems,
                 CryptoContext<DCRTPoly> &cryptoContext,
                 InitRotsMasks &initRotsMasks) {
-    // Derive enc(row) form of resulting matrix.
-    auto n = encMatElems.size();
-    std::vector<Ciphertext<DCRTPoly>> encResRows;
+    // Derive enc(row) form of input matrix elements.
+    auto n = encMatElems.size(); // TODO: Verify input.
+    std::vector<Ciphertext<DCRTPoly>> encMatRows;
     for (size_t row=0 ; row < n ; ++row){ 
         std::vector<Ciphertext<DCRTPoly>> encRowContainer;
         for (size_t col=0 ; col < n ; ++col){ 
-            encRowContainer.push_back(cryptoContext->EvalRotate(encMatElems[row][col], col));
+            auto encElemMasked = cryptoContext->EvalMult(encMatElems[row][col], initRotsMasks.encMasks()[0]);      
+            cryptoContext->ModReduceInPlace(encElemMasked);
+            encRowContainer.push_back(cryptoContext->EvalRotate(encElemMasked, col));
         }
-        encResRows.push_back(cryptoContext->EvalAddMany(encRowContainer));
+        encMatRows.push_back(cryptoContext->EvalAddMany(encRowContainer));
     }
-    return encResRows;       
+    return encMatRows;       
 }
 
 
-// encElem2Cols()
+std::vector<Ciphertext<DCRTPoly>> // Col-encrypted output matrix.
+    encElem2Cols(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElems,
+                CryptoContext<DCRTPoly> &cryptoContext,
+                InitRotsMasks &initRotsMasks) {
+    // Derive enc(col) form of input matrix elements.
+    auto n = encMatElems.size(); // TODO: Verify input.
+    std::vector<Ciphertext<DCRTPoly>> encMatCols;
+    for (size_t col=0 ; col < n ; ++col){ 
+        std::vector<Ciphertext<DCRTPoly>> encColContainer;
+        for (size_t row=0 ; row < n ; ++row){ 
+            auto encElemMasked = cryptoContext->EvalMult(encMatElems[row][col], initRotsMasks.encMasks()[0]);
+            cryptoContext->ModReduceInPlace(encElemMasked);
+            encColContainer.push_back(cryptoContext->EvalRotate(encElemMasked, row));
+        }
+        encMatCols.push_back(cryptoContext->EvalAddMany(encColContainer));
+    }
+    return encMatCols;
+}
 
 
-std::tuple<std::vector<Ciphertext<DCRTPoly>>, // Row-encrypted output matrix
-           std::vector<Ciphertext<DCRTPoly>>> // Col-encrypted output matrix
-           evalMatrixMul2Pow(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatsRows, // Row-encrypted input matrices
-                             std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatsCols, // Col-encrypted input matrices 
-                             CryptoContext<DCRTPoly> &cryptoContext,
-                             InitRotsMasks &initRotsMasks) {
-    // TODO: input checks.
-    assert(encMatsRows.size() == encMatsCols.size());
-    auto numMats = encMatsRows.size();
+std::vector<std::vector<Ciphertext<DCRTPoly>>> // Element-wise-encrypted output matrix
+    evalMatrixMul2Pow(std::vector<std::vector<std::vector<Ciphertext<DCRTPoly>>>> &encMatsElems, // Element-wise-encrypted input matrices
+                      CryptoContext<DCRTPoly> &cryptoContext,
+                      InitRotsMasks &initRotsMasks) {
+    
+    // Assert number of matrices is power of 2^k for k>0.
+    auto numMats = encMatsElems.size();
     int numBits = sizeof(int) * 8; int msbPosition = -1; int bitCtr = 0;
     for (int i = numBits - 1; i >= 0; i--) {
         if (numMats >> i & 1) { bitCtr++ ; if (msbPosition == -1){ msbPosition = i + 1; } }}
     assert(bitCtr == 1 && msbPosition != 0);
 
-    // TODO: Check input matrix sizes.
-    auto n = encMatsRows[0].size();
+    // TODO: Check well-formedness of all input matrices.
+    auto n = encMatsElems[0].size();
 
     // If 2 matrices, multiply.
     if (numMats == 2) {
-         // Element-wise matrix multiplication.
+        // Convert to row- and col-wise matrix encryptions.
+        auto leftEncMat = encElem2Rows(encMatsElems[0],cryptoContext,initRotsMasks);
+        auto rightEncMat = encElem2Cols(encMatsElems[1],cryptoContext,initRotsMasks);
+
+        // Element-wise matrix multiplication.
         std::vector<std::vector<Ciphertext<DCRTPoly>>> encElemContainer;
         for (size_t row=0 ; row < n ; ++row){ 
             std::vector<Ciphertext<DCRTPoly>> encElemRow;
             for (size_t col=0 ; col < n ; ++col){ 
-                auto encElem = cryptoContext->EvalInnerProduct(encMatsRows[0][row], encMatsCols[1][col], n);
+                auto encElem = cryptoContext->EvalInnerProduct(leftEncMat[row], rightEncMat[col], n);
                 auto encElemMasked = cryptoContext->EvalMult(encElem, initRotsMasks.encMasks()[0]);         
                 cryptoContext->ModReduceInPlace(encElemMasked);
                 encElemRow.push_back(encElemMasked);
             }
             encElemContainer.push_back(encElemRow);
         }
-        // Derive enc(row) form of resulting matrix.
-        std::vector<Ciphertext<DCRTPoly>> encResRows;
-        for (size_t row=0 ; row < n ; ++row){ 
-            std::vector<Ciphertext<DCRTPoly>> encRowContainer;
-            for (size_t col=0 ; col < n ; ++col){ 
-                encRowContainer.push_back(cryptoContext->EvalRotate(encElemContainer[row][col], col));
-            }
-            encResRows.push_back(cryptoContext->EvalAddMany(encRowContainer));
-        }
-        // Derive enc(row) form of resulting matrix.
-        std::vector<Ciphertext<DCRTPoly>> encResCols;
-        for (size_t col=0 ; col < n ; ++col){ 
-            std::vector<Ciphertext<DCRTPoly>> encColContainer;
-            for (size_t row=0 ; row < n ; ++row){ 
-                encColContainer.push_back(cryptoContext->EvalRotate(encElemContainer[row][col], row));
-            }
-            encResCols.push_back(cryptoContext->EvalAddMany(encColContainer));
-        }
-        return std::make_tuple(encResRows, encResCols);
+        // // Derive enc(row) form of resulting matrix.
+        // auto encResRows = encElem2Cols
+        // std::vector<Ciphertext<DCRTPoly>> encResRows;
+        // for (size_t row=0 ; row < n ; ++row){ 
+        //     std::vector<Ciphertext<DCRTPoly>> encRowContainer;
+        //     for (size_t col=0 ; col < n ; ++col){ 
+        //         encRowContainer.push_back(cryptoContext->EvalRotate(encElemContainer[row][col], col));
+        //     }
+        //     encResRows.push_back(cryptoContext->EvalAddMany(encRowContainer));
+        // }
+        // // Derive enc(col) form of resulting matrix.
+        // std::vector<Ciphertext<DCRTPoly>> encResCols;
+        // for (size_t col=0 ; col < n ; ++col){ 
+        //     std::vector<Ciphertext<DCRTPoly>> encColContainer;
+        //     for (size_t row=0 ; row < n ; ++row){ 
+        //         encColContainer.push_back(cryptoContext->EvalRotate(encElemContainer[row][col], row));
+        //     }
+        //     encResCols.push_back(cryptoContext->EvalAddMany(encColContainer));
+        // }
+        return encElemContainer;
     }
     else {
         // Recursion: Compute multiplication on left and right half of elements.
-        std::vector<std::vector<Ciphertext<DCRTPoly>>> encLeftMatsRows(encMatsRows.begin(),encMatsRows.begin()+numMats/2);
-        std::vector<std::vector<Ciphertext<DCRTPoly>>> encLeftMatsCols(encMatsCols.begin(),encMatsCols.begin()+numMats/2);
-        std::vector<std::vector<Ciphertext<DCRTPoly>>> encRightMatsRows(encMatsRows.begin()+numMats/2,encMatsRows.end());
-        std::vector<std::vector<Ciphertext<DCRTPoly>>> encRightMatsCols(encMatsCols.begin()+numMats/2,encMatsCols.end());
-        auto leftMatTuple = evalMatrixMul2Pow(encLeftMatsRows, encLeftMatsCols, cryptoContext, initRotsMasks);
-        auto rightMatTuple = evalMatrixMul2Pow(encRightMatsRows, encRightMatsCols, cryptoContext, initRotsMasks);
-        std::vector<std::vector<Ciphertext<DCRTPoly>>> encMatsRows_; 
-        std::vector<std::vector<Ciphertext<DCRTPoly>>> encMatsCols_; 
-        encMatsRows_.push_back(std::get<0>(leftMatTuple)); encMatsRows_.push_back(std::get<0>(rightMatTuple));
-        encMatsCols_.push_back(std::get<1>(leftMatTuple)); encMatsCols_.push_back(std::get<1>(rightMatTuple));
-        return evalMatrixMul2Pow(encMatsRows_, encMatsCols_, cryptoContext, initRotsMasks);
+        std::vector<std::vector<std::vector<Ciphertext<DCRTPoly>>>> encLeftMatsElems(encMatsElems.begin(),encMatsElems.begin()+numMats/2);
+        std::vector<std::vector<std::vector<Ciphertext<DCRTPoly>>>> encRightMatsElems(encMatsElems.begin()+numMats/2,encMatsElems.end());
+        auto leftMatElems = evalMatrixMul2Pow(encLeftMatsElems, cryptoContext, initRotsMasks);
+        auto rightMatElems = evalMatrixMul2Pow(encRightMatsElems, cryptoContext, initRotsMasks);
+        std::vector<std::vector<std::vector<Ciphertext<DCRTPoly>>>> encMatsContainer;
+        encMatsContainer.push_back(leftMatElems); encMatsContainer.push_back(rightMatElems);
+        // std::vector<std::vector<Ciphertext<DCRTPoly>>> rightMatsCols;
+        // auto leftMatRows = encElem2Rows(leftMatElems,cryptoContext,initRotsMasks);
+        // auto rightMatCols =encElem2Cols(rightMatElems,cryptoContext,initRotsMasks);
+        // leftMatsRows.push_back(leftMatRows);
+        // rightMatsCols.push_back(rightMatCols);
+        return evalMatrixMul2Pow(encMatsContainer, cryptoContext, initRotsMasks);
+        // std::vector<std::vector<Ciphertext<DCRTPoly>>> encMatsRows_; 
+        // std::vector<std::vector<Ciphertext<DCRTPoly>>> encMatsCols_; 
+        // encMatsRows_.push_back(std::get<0>(leftMatTuple)); encMatsRows_.push_back(std::get<0>(rightMatTuple));
+        // encMatsCols_.push_back(std::get<1>(leftMatTuple)); encMatsCols_.push_back(std::get<1>(rightMatTuple));
+        // return evalMatrixMul2Pow(encMatsRows_, encMatsCols_, cryptoContext, initRotsMasks);
     }
 }
 
 
-// std::vector<Ciphertext<DCRTPoly>> evalMatrixMulMany(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatRows,
-//                                                     std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatCols,
-//                                                     CryptoContext<DCRTPoly> &cryptoContext,
-//                                                     InitRotsMasks initRotsMasks) {
+// std::vector<std::vector<Ciphertext<DCRTPoly>>> // Elem-wise encryptions of output matrix.
+//     evalMatrixMulMany(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatRows, // Row-encrypted input matrices.
+//                       std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatCols, // Col-encrypted input matrices.
+//                       CryptoContext<DCRTPoly> &cryptoContext,
+//                       InitRotsMasks &initRotsMasks) {
 //     // TODO: input checks.
 //     assert(encMatRows.size() == encMatCols.size());
 //     auto numMats = encMatRows.size();
