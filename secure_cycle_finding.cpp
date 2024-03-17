@@ -972,11 +972,9 @@ int main(int argc, char* argv[]) {
 
     TIC(t);
 
-    // TODO: get compute encryption of columns.
-    // TODO: compute exponentiation (enc(rows),enc(cols))
-
-
-    auto encMatrixExp = evalMatrixExp(encRowsAdjMatrix,n,cryptoContext,initRotsMasks); // TODO: access keypair from InitMatrixExp class.
+    // auto encMatrixExp = evalMatrixExp(encRowsAdjMatrix,n,cryptoContext,initRotsMasks); 
+    auto encMatrixExpElems = evalMatSqMul(encRowsAdjMatrix, n, cryptoContext,initRotsMasks, keyPair);
+    auto encMatrixExp = encElem2Rows(encMatrixExpElems,cryptoContext,initRotsMasks);
     
     // Refresh ciphertexts.
     for (int row=0; row < n; ++row){ refreshInPlace(encMatrixExp[row],n,keyPair, cryptoContext); } 
