@@ -891,31 +891,31 @@ int main(int argc, char* argv[]) {
     // Tests for matrix exponentiation.
     //==========================================================
                
-    std::vector<std::vector<int64_t>> testMatRows;
-    testMatRows.push_back({1, 0, 1, 0, 0});
-    testMatRows.push_back({0, 1, 0, 0, 1});
-    testMatRows.push_back({1, 0, 1, 0, 0});
-    testMatRows.push_back({0, 1, 0, 0, 1});
-    testMatRows.push_back({1, 0, 1, 0, 0});
+    // std::vector<std::vector<int64_t>> testMatRows;
+    // testMatRows.push_back({1, 0, 1, 0, 0});
+    // testMatRows.push_back({0, 1, 0, 0, 1});
+    // testMatRows.push_back({1, 0, 1, 0, 0});
+    // testMatRows.push_back({0, 1, 0, 0, 1});
+    // testMatRows.push_back({1, 0, 1, 0, 0});
 
-    std::vector<Ciphertext<DCRTPoly>> testEncMatRows;
-    for (int i = 0; i < testMatRows.size(); i++){
-    testEncMatRows.push_back(cryptoContext->Encrypt(keyPair.publicKey,
-                             cryptoContext->MakePackedPlaintext(testMatRows[i])));
-    }
+    // std::vector<Ciphertext<DCRTPoly>> testEncMatRows;
+    // for (int i = 0; i < testMatRows.size(); i++){
+    // testEncMatRows.push_back(cryptoContext->Encrypt(keyPair.publicKey,
+    //                          cryptoContext->MakePackedPlaintext(testMatRows[i])));
+    // }
     // Test 1:
     // auto encMatsResElems = evalMatSquarings(testEncMatRows,3,cryptoContext,initRotsMasks, keyPair);
     // auto encMatResElems = evalMatrixMul2Pow(encMatsResElems,cryptoContext,initRotsMasks);
     // auto encMatResRows = encElem2Rows(encMatResElems,cryptoContext,initRotsMasks);
 
     // Test 2:
-    auto encMatResElems = evalMatSqMul(testEncMatRows, 1, cryptoContext,initRotsMasks, keyPair);
-    auto encMatResRows = encElem2Rows(encMatResElems,cryptoContext,initRotsMasks);
+    // auto encMatResElems = evalMatSqMul(testEncMatRows, 15, cryptoContext,initRotsMasks, keyPair);
+    // auto encMatResRows = encElem2Rows(encMatResElems,cryptoContext,initRotsMasks);
 
-    std::cout << "Test Matrix: " << std::endl;
-    printEncMatRows(encMatResRows,cryptoContext,keyPair);
+    // std::cout << "Test Matrix: " << std::endl;
+    // printEncMatRows(encMatResRows,cryptoContext,keyPair);
 
-    return 0;
+    // return 0;
                                                   
     //==========================================================
     // Online phase.
