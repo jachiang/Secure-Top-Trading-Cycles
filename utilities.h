@@ -12,6 +12,7 @@ int modInverse(int A, int M);
 class CryptoOpsLogger {
 public:
     CryptoOpsLogger();
+
     void logInnerProd(double ms);
     void logAddMany(double ms);
     void logMult(double ms);
@@ -24,6 +25,7 @@ public:
     int addOps();           double addTime();
     int rotOps();           double rotTime();
     int totalTime();
+    
 private:
     int innerProdOps_; double innerProdTime_;
     int addManyOps_; double addManyTime_;
@@ -33,7 +35,7 @@ private:
 };
 
 
-// Helper class for matrix exponentiation: 
+// Helper class for matrix exponentiation.
 // Iterator steps through for all slot indices (i,j,k...) in [0,modulus) x [0,modulus) x [0,modulus) x ...
 class VectorIter {
 public:
@@ -45,6 +47,7 @@ private:
     int mod_;
     std::vector<int> vectorIter_;
 };
+
 
 #endif
 
