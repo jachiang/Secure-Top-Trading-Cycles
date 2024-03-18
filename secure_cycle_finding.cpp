@@ -37,10 +37,9 @@
 #define PROFILE
 
 #include "utilities.h"
+#include "crypto_utilities.h"
 
 #include <cassert>
-// #include <chrono>
-// #include <fstream>
 #include <iostream>
 #include <iterator>
 #include <cmath>
@@ -49,63 +48,6 @@
 #include "openfhe.h"
 
 using namespace lbcrypto;
-
-
-void printEncMatRows(std::vector<Ciphertext<DCRTPoly>> &encMatRows, CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair){
-    for (int row=0; row < encMatRows.size(); ++row){
-        Plaintext plaintext;
-        cryptoContext->Decrypt(keyPair.secretKey, encMatRows[row], &plaintext); 
-        plaintext->SetLength(encMatRows.size()); auto payload = plaintext->GetPackedValue();
-        std::cout << payload << std::endl;
-    }
-
-}
-
-
-void printEncMatElems(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElems, CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair){
-    for (int row=0; row < encMatElems.size(); ++row){
-        for (int col=0; col < encMatElems.size(); ++col){
-            Plaintext plaintext;
-            cryptoContext->Decrypt(keyPair.secretKey, encMatElems[row][col], &plaintext); 
-            plaintext->SetLength(1); auto payload = plaintext->GetPackedValue();
-            std::cout << payload << " ";
-        }
-        std::cout << std::endl;
-    }
-}
-
-
-// // Helper class for matrix exponentiation: 
-// // Iterator steps through for all slot indices (i,j,k...) in [0,modulus) x [0,modulus) x [0,modulus) x ...
-// class vectorIter {
-// public:
-//     vectorIter(int modulus, int slots) {
-//         mod_ = modulus;
-//         for (size_t i = 0; i < slots; ++i) { vectorIter_.push_back(0); }
-//     }
-
-//     std::vector<int> value() {
-//         return vectorIter_;
-//     }
-
-//     bool iterate() {
-//         return iterate_(0);
-//     }
-
-//     bool iterate_(int slot) {
-//         // Case 0: Highest idx cannot be incremented further.
-//         if (slot == vectorIter_.size()-1 && (vectorIter_[slot] == mod_-1)) { return false; }
-//         // Case 1: Increment & carry. 
-//         else if (vectorIter_[slot] == mod_ - 1) {
-//             vectorIter_[slot] = 0; if (iterate_(slot+1)) { return true; } else { return false; }}
-//         // Case 2: Increment.
-//         else { vectorIter_[slot] = vectorIter_[slot]+1; return true; }
-//     }
-
-// private:
-//     int mod_;
-//     std::vector<int> vectorIter_;
-// };
 
 
 // Class to initialize rotation keys and masks.

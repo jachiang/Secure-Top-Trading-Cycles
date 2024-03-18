@@ -53,8 +53,6 @@ else()
 endif()
 
 ### ADD YOUR EXECUTABLE(s) HERE
-# add_executable(int_test int_test.cpp)
 add_executable(secure_cycle_finding secure_cycle_finding.cpp 
-                                    utilities.cpp 
-                                    utilities.h)
-# add_executable(paramGen paramGen.cpp)
+                                    utilities.cpp utilities.h
+                                    crypto_utilities.cpp crypto_utilities.h)
