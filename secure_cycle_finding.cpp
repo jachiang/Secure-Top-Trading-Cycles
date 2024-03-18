@@ -36,6 +36,8 @@
 
 #define PROFILE
 
+#include "utilities.h"
+
 #include <cassert>
 // #include <chrono>
 // #include <fstream>
@@ -47,26 +49,6 @@
 #include "openfhe.h"
 
 using namespace lbcrypto;
-
-int modFactorial(int n, int modulus) {
-    if (n == 0 || n == 1) { return 1; } 
-    else { return ( (n * modFactorial(n - 1, modulus)) % modulus ); }
-}
-
-int gcdExtended(int a, int b, int* x, int* y)
-{
-    if (a == 0) { *x = 0, *y = 1; return b; }
-    int x1, y1; int gcd = gcdExtended(b % a, a, &x1, &y1);
-    *x = y1 - (b / a) * x1; *y = x1;
-    return gcd;
-}
-
-int modInverse(int A, int M)
-{
-    int x, y; int g = gcdExtended(A, M, &x, &y);
-    assert(g = 1); // Otherwise, no inverse
-    return (x % M + M) % M; 
-}
 
 
 void printEncMatRows(std::vector<Ciphertext<DCRTPoly>> &encMatRows, CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair){
@@ -91,36 +73,6 @@ void printEncMatElems(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElem
         std::cout << std::endl;
     }
 }
-
-
-class CryptoOpsLogger {
-public:
-    CryptoOpsLogger() : innerProdOps_(0), innerProdTime_(0.0), 
-                        addManyOps_(0), addManyTime_(0.0),
-                        multOps_(0), multTime_(0.0), 
-                        addOps_(0), addTime_(0.0),
-                        rotOps_(0), rotTime_(0.0) {}
-
-    void logInnerProd(double ms) { innerProdOps_ += 1 ; innerProdTime_ = innerProdTime_ + ms; }
-    void logAddMany(double ms) { addManyOps_ += 1 ; addManyTime_ = addManyTime_ + ms; }
-    void logMult(double ms) { multOps_ += 1 ; multTime_ = multTime_ + ms; }
-    void logAdd(double ms) { addOps_ += 1 ; addTime_ = addTime_ + ms; }
-    void logRot(double ms) { rotOps_ += 1 ; rotTime_ = rotTime_ + ms; }
-
-    int innerProdOps() { return innerProdOps_; }  double innerProdTime() { return innerProdTime_; }
-    int addManyOps() { return addManyOps_; }      double addManyTime() { return addManyTime_; }
-    int multOps() { return multOps_; }            double multTime() { return multTime_; }
-    int addOps() { return addOps_; }              double addTime() { return addTime_; }
-    int rotOps() { return rotOps_; }              double rotTime() { return rotTime_; }
-    int totalTime() { return innerProdTime_+addManyTime_+multTime_+addTime_+rotTime_; } 
-
-private:
-    int innerProdOps_; double innerProdTime_;
-    int addManyOps_; double addManyTime_;
-    int multOps_; double multTime_;
-    int addOps_; double addTime_;
-    int rotOps_; double rotTime_; // TODO: Rotation degree not logged.
-};
 
 
 // Helper class for matrix exponentiation: 
@@ -181,17 +133,6 @@ class InitRotsMasks {
     private:
         std::vector<Ciphertext<DCRTPoly>> encMasks_;
 };
-
-// // Container class for encrypted matrix.
-// class EncMatrix {
-
-//     public:
-//         pushBackElemRow(std::vector<Ciphertext<DCRTPoly>> &encElem){
-//             elements.push_back(encElemRow);
-//         }
-
-//         std::vector<std::vector<Ciphertext<DCRTPoly>>> elements;
-// }
 
 
 // Helper method for matrix exponentiation: transforms row encryptions to encryptions of columns.
@@ -1055,13 +996,13 @@ int main(int argc, char* argv[]) {
     //----------------------------------------------------------
 
     TIC(t);
-    // auto encMatrixExp = evalMatrixExp(encRowsAdjMatrix,n,cryptoContext,initRotsMasks); 
+    // auto encMatrixExp = evalMatrixExp(encRowsAdjMatrix,n,cryptoContext,initRotsMasks,cryptoOpsLogger); 
     auto encMatrixExpElems = evalMatSqMul(encRowsAdjMatrix,n,cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair);
     auto encMatrixExp = encElem2Rows(encMatrixExpElems,cryptoContext,initRotsMasks,cryptoOpsLogger);
     std::cout << "Total matrix exponentiation time: " << TOC(t) << " ms" << std::endl;
-    std::cout << "Total homomorphic computation time: " << cryptoOpsLogger.totalTime() << " ms" << std::endl;
-    std::cout << "Total homomorphic multiplications: " << cryptoOpsLogger.multOps()+cryptoOpsLogger.innerProdOps() << std::endl;
-    std::cout << "Total homomorphic multiplication time: " << cryptoOpsLogger.multTime()+cryptoOpsLogger.innerProdTime() << " ms" << std::endl;
+    // std::cout << "Total homomorphic computation time: " << cryptoOpsLogger.totalTime() << " ms" << std::endl;
+    // std::cout << "Total homomorphic multiplications: " << cryptoOpsLogger.multOps()+cryptoOpsLogger.innerProdOps() << std::endl;
+    // std::cout << "Total homomorphic multiplication time: " << cryptoOpsLogger.multTime()+cryptoOpsLogger.innerProdTime() << " ms" << std::endl;
 
     // Refresh ciphertexts.
     for (int row=0; row < n; ++row){ refreshInPlace(encMatrixExp[row],n,keyPair, cryptoContext); } 
