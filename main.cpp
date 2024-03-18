@@ -456,30 +456,30 @@ std::vector<Ciphertext<DCRTPoly>> evalMatrixExp(std::vector<Ciphertext<DCRTPoly>
 }
 
 
-class InitMatrixVecMult {
-public:
-    InitMatrixVecMult(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int slots) :
-        slots(slots) 
-    {
-        // TODO: assert slots leq plaintext slots in cryptoContext.
-        // Generate rotation keys for |slots| steps.
-        std::vector<int32_t> rotIndices;
-        for (size_t i = 0; i < slots; i++) { rotIndices.push_back(-i); }
-        cryptoContext->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
-        // Generate Eval Sum Key for EvalInnerProduct.
-        cryptoContext->EvalSumKeyGen(keyPair.secretKey);
-        // Generate encrypted mask with leading 1.
-        std::vector<int64_t> mask(slots,0); mask[0] = 1;
-        encMaskFirst_ = cryptoContext->Encrypt(keyPair.publicKey, cryptoContext->MakePackedPlaintext(mask));
-    }
+// class InitMatrixVecMult {
+// public:
+//     InitMatrixVecMult(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int slots) :
+//         slots(slots) 
+//     {
+//         // TODO: assert slots leq plaintext slots in cryptoContext.
+//         // Generate rotation keys for |slots| steps.
+//         std::vector<int32_t> rotIndices;
+//         for (size_t i = 0; i < slots; i++) { rotIndices.push_back(-i); }
+//         cryptoContext->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
+//         // Generate Eval Sum Key for EvalInnerProduct.
+//         cryptoContext->EvalSumKeyGen(keyPair.secretKey);
+//         // Generate encrypted mask with leading 1.
+//         std::vector<int64_t> mask(slots,0); mask[0] = 1;
+//         encMaskFirst_ = cryptoContext->Encrypt(keyPair.publicKey, cryptoContext->MakePackedPlaintext(mask));
+//     }
 
-    Ciphertext<DCRTPoly> encMaskFirst() { return encMaskFirst_; }
+//     Ciphertext<DCRTPoly> encMaskFirst() { return encMaskFirst_; }
 
-    const int slots;
+//     const int slots;
 
-private:
-    Ciphertext<DCRTPoly> encMaskFirst_;
-};
+// private:
+//     Ciphertext<DCRTPoly> encMaskFirst_;
+// };
 
 
 Ciphertext<DCRTPoly> evalMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &encRows, 
