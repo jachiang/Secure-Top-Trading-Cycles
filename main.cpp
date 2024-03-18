@@ -50,34 +50,6 @@
 using namespace lbcrypto;
 
 
-// Class to initialize rotation keys and masks.
-class InitRotsMasks {
-    public:
-        InitRotsMasks(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int slots) :
-            slots(slots) 
-        {
-            // (1) Generate rotation keys for |slots| number of steps.
-            std::vector<int32_t> rotIndices;
-            for (size_t i = 0; i <= slots; i++) { rotIndices.push_back(-i); rotIndices.push_back(i);}
-            cryptoContext->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
-            // (2)Generate Eval Sum Key for EvalInnerProduct.
-            cryptoContext->EvalSumKeyGen(keyPair.secretKey);
-            // (3) Generate ciphertext masks for extraction of ciphertext slot values.
-            for (size_t elem=0 ; elem < slots ; ++elem){ 
-                std::vector<int64_t> mask(slots,0); mask[elem] = 1;
-                encMasks_.push_back(cryptoContext->Encrypt(keyPair.publicKey,
-                                                           cryptoContext->MakePackedPlaintext(mask)));
-            }
-        }
-
-    std::vector<Ciphertext<DCRTPoly>> encMasks() { return encMasks_; }
-    const int slots;
-
-    private:
-        std::vector<Ciphertext<DCRTPoly>> encMasks_;
-};
-
-
 // Helper method for matrix exponentiation: transforms row encryptions to encryptions of columns.
 // Multiplicative depth: 1
 std::vector<Ciphertext<DCRTPoly>> rowToColEnc(std::vector<Ciphertext<DCRTPoly>> &encRows, 
