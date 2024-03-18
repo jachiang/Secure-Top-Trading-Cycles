@@ -75,36 +75,37 @@ void printEncMatElems(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElem
 }
 
 
-// Helper class for matrix exponentiation: 
-// Iterator steps through for all slot indices (i,j,k...) in [0,modulus) x [0,modulus) x [0,modulus) x ...
-class vectorIter {
-public:
-    vectorIter(int modulus, int slots) {
-        mod_ = modulus;
-        for (size_t i = 0; i < slots; ++i) { vectorIter_.push_back(0); }
-    }
+// // Helper class for matrix exponentiation: 
+// // Iterator steps through for all slot indices (i,j,k...) in [0,modulus) x [0,modulus) x [0,modulus) x ...
+// class vectorIter {
+// public:
+//     vectorIter(int modulus, int slots) {
+//         mod_ = modulus;
+//         for (size_t i = 0; i < slots; ++i) { vectorIter_.push_back(0); }
+//     }
 
-    std::vector<int> value() {
-        return vectorIter_;
-    }
+//     std::vector<int> value() {
+//         return vectorIter_;
+//     }
 
-    bool iterate() {
-        return iterate_(0);
-    }
+//     bool iterate() {
+//         return iterate_(0);
+//     }
 
-    bool iterate_(int slot) {
-        // Case 0: Highest idx cannot be incremented further.
-        if (slot == vectorIter_.size()-1 && (vectorIter_[slot] == mod_-1)) { return false; }
-        // Case 1: Increment & carry. 
-        else if (vectorIter_[slot] == mod_ - 1) {
-            vectorIter_[slot] = 0; if (iterate_(slot+1)) { return true; } else { return false; }}
-        // Case 2: Increment.
-        else { vectorIter_[slot] = vectorIter_[slot]+1; return true; }
-    }
+//     bool iterate_(int slot) {
+//         // Case 0: Highest idx cannot be incremented further.
+//         if (slot == vectorIter_.size()-1 && (vectorIter_[slot] == mod_-1)) { return false; }
+//         // Case 1: Increment & carry. 
+//         else if (vectorIter_[slot] == mod_ - 1) {
+//             vectorIter_[slot] = 0; if (iterate_(slot+1)) { return true; } else { return false; }}
+//         // Case 2: Increment.
+//         else { vectorIter_[slot] = vectorIter_[slot]+1; return true; }
+//     }
 
-    int mod_;
-    std::vector<int> vectorIter_;
-};
+// private:
+//     int mod_;
+//     std::vector<int> vectorIter_;
+// };
 
 
 // Class to initialize rotation keys and masks.
@@ -475,7 +476,7 @@ std::vector<Ciphertext<DCRTPoly>> evalMatrixExp(std::vector<Ciphertext<DCRTPoly>
         std::vector<std::vector<Ciphertext<DCRTPoly>>> enc_add_per_row_container;
         std::vector<Ciphertext<DCRTPoly>> initEncVec;
          for (size_t row=0 ; row < matrix_dim ; ++row){ enc_add_per_row_container.push_back(initEncVec); }
-        int indices_dim = exponent-1; vectorIter indices(matrix_dim,indices_dim); bool iterContinue = true;  
+        int indices_dim = exponent-1; VectorIter indices(matrix_dim,indices_dim); bool iterContinue = true;  
         while (iterContinue) { 
             // std::cout << indices.value() << std::endl;
             std::vector<Ciphertext<DCRTPoly>> enc_mult_container; // container for factors of multiplicative terms.

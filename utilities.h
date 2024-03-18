@@ -1,9 +1,13 @@
 #ifndef UTILITIES_H
 #define UTILITIES_H
 
+#include <vector>
+
+
 int modFactorial(int n, int modulus);
 int gcdExtended(int a, int b, int* x, int* y);
 int modInverse(int A, int M);
+
 
 class CryptoOpsLogger {
 public:
@@ -29,6 +33,18 @@ private:
 };
 
 
+// Helper class for matrix exponentiation: 
+// Iterator steps through for all slot indices (i,j,k...) in [0,modulus) x [0,modulus) x [0,modulus) x ...
+class VectorIter {
+public:
+    VectorIter(int modulus, int slots);
+    std::vector<int> value();
+    bool iterate();
+    bool iterate_(int slot);
+private:
+    int mod_;
+    std::vector<int> vectorIter_;
+};
 
 #endif
 

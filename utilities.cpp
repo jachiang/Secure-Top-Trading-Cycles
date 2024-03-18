@@ -45,3 +45,25 @@ double CryptoOpsLogger::addTime() { return addTime_; };
 int CryptoOpsLogger::rotOps() { return rotOps_; };              
 double CryptoOpsLogger::rotTime() { return rotTime_; };
 int CryptoOpsLogger::totalTime() { return innerProdTime_+addManyTime_+multTime_+addTime_+rotTime_; }; 
+
+
+VectorIter::VectorIter(int modulus, int slots) {
+    mod_ = modulus;
+    for (size_t i = 0; i < slots; ++i) { vectorIter_.push_back(0); }
+};
+std::vector<int> VectorIter::value() {
+    return vectorIter_;
+};
+bool VectorIter::iterate() {
+    return iterate_(0);
+};
+bool VectorIter::iterate_(int slot) {
+    // Case 0: Highest idx cannot be incremented further.
+    if (slot == vectorIter_.size()-1 && (vectorIter_[slot] == mod_-1)) { return false; }
+    // Case 1: Increment & carry. 
+    else if (vectorIter_[slot] == mod_ - 1) {
+        vectorIter_[slot] = 0; if (iterate_(slot+1)) { return true; } else { return false; }}
+    // Case 2: Increment.
+    else { vectorIter_[slot] = vectorIter_[slot]+1; return true; }
+};
+
