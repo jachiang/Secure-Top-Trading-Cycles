@@ -38,6 +38,7 @@
 
 #include "utilities.h"
 #include "crypto_utilities.h"
+#include "crypto_prefix_mult.h"
 
 #include <cassert>
 #include <iostream>
