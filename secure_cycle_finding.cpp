@@ -932,8 +932,9 @@ int main(int argc, char* argv[]) {
     
     TIC(t);
     auto res = cryptoContext->EvalMult(encOnes,encOnes);
+    cryptoContext->ModReduceInPlace(res);
     processingTime = TOC(t);
-    std::cout << "Multiplication: " << processingTime << "ms" << std::endl;
+    std::cout << "Multiplication & mod reduction: " << processingTime << "ms" << std::endl;
 
     TIC(t);
 
