@@ -19,6 +19,10 @@ std::vector<Ciphertext<DCRTPoly>> encElem2Rows(std::vector<std::vector<Ciphertex
                                                InitRotsMasks &initRotsMasks,
                                                CryptoOpsLogger &cryptoOpsLogger);
 
+std::vector<Ciphertext<DCRTPoly>> encElem2Cols(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElems,
+                                               CryptoContext<DCRTPoly> &cryptoContext,
+                                               InitRotsMasks &initRotsMasks,
+                                               CryptoOpsLogger &cryptoOpsLogger);
 
 
 #endif

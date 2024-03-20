@@ -1,5 +1,6 @@
-#include "crypto_enc_transform.h"
 #include "crypto_utilities.h"
+#include "crypto_enc_transform.h"
+
 
 std::vector<Ciphertext<DCRTPoly>> rowToColEnc(std::vector<Ciphertext<DCRTPoly>> &encRows, 
                                               CryptoContext<DCRTPoly> &cryptoContext,
@@ -7,10 +8,6 @@ std::vector<Ciphertext<DCRTPoly>> rowToColEnc(std::vector<Ciphertext<DCRTPoly>> 
                                               CryptoOpsLogger &cryptoOpsLogger) {
     // Assumes n x n matrix: n plaintext slots in each row encryption.
     auto n = encRows.size();
-    // Generate rotation keys.    
-    // std::vector<int32_t> rotIndices;
-    // for (size_t i = 0; i < n; i++) { rotIndices.push_back(i); rotIndices.push_back(-i); }
-    // cryptoContext->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
     // Populate column containers with encryptions of isolated matrix elements.
     std::vector<std::vector<Ciphertext<DCRTPoly>>> enc_col_container; 
     for (size_t row=0 ; row < n ; ++row){ 
@@ -77,3 +74,33 @@ std::vector<Ciphertext<DCRTPoly>> // Row-encrypted output matrix.
     }
     return encMatRows;       
 }
+
+
+std::vector<Ciphertext<DCRTPoly>> // Col-encrypted output matrix.
+    encElem2Cols(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElems,
+                CryptoContext<DCRTPoly> &cryptoContext,
+                InitRotsMasks &initRotsMasks,
+                CryptoOpsLogger &cryptoOpsLogger) {
+    // Derive enc(col) form of input matrix elements.
+    auto n = encMatElems.size(); // TODO: Verify input.
+    std::vector<Ciphertext<DCRTPoly>> encMatCols;
+    for (size_t col=0 ; col < n ; ++col){ 
+        std::vector<Ciphertext<DCRTPoly>> encColContainer;
+        for (size_t row=0 ; row < n ; ++row){ 
+            // auto encElemMasked = cryptoContext->EvalMult(encMatElems[row][col], initRotsMasks.encMasks()[0]);
+            // cryptoContext->ModReduceInPlace(encElemMasked);
+            auto encElemMasked = encMatElems[row][col];
+            // Compute & Log Rotation of ciphertexts.
+            TimeVar t; TIC(t);
+            encColContainer.push_back(cryptoContext->EvalRotate(encElemMasked, -row));
+            cryptoOpsLogger.logRot(TOC(t));
+        }
+        // Compute & Log AddMany over ciphertexts.
+        TimeVar t; TIC(t);
+        auto res = cryptoContext->EvalAddMany(encColContainer);
+        cryptoOpsLogger.logAddMany(TOC(t));
+        encMatCols.push_back(res);
+    }
+    return encMatCols;
+}
+
