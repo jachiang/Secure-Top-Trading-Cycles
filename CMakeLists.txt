@@ -57,4 +57,6 @@ add_executable(main main.cpp
                     utilities.cpp utilities.h
                     crypto_utilities.cpp crypto_utilities.h
                     crypto_enc_transform.cpp crypto_enc_transform.h
-                    )
+                    crypto_matrix_operations.cpp crypto_matrix_operations.h
+                    crypto_prefix_mult.cpp crypto_prefix_mult.h
+                    crypto_noteqzero.cpp crypto_noteqzero.h)

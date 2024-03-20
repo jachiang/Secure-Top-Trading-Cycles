@@ -40,3 +40,34 @@ InitRotsMasks::InitRotsMasks(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCR
     }
 }
 std::vector<Ciphertext<DCRTPoly>> InitRotsMasks::encMasks() { return encMasks_; }
+
+
+// Ciphertext exponentiation, via square and multiply. Multiplicative depth: log(exponent)
+Ciphertext<DCRTPoly> evalExponentiate(Ciphertext<DCRTPoly> &ciphertext, int exponent, 
+                                      CryptoContext<DCRTPoly> &cryptoContext) {
+    // Get msb position of exponent.
+    int numBits = sizeof(int) * 8;
+    int msbPosition = -1;
+    for (int i = numBits - 1; i >= 0; i--) {
+        if ((exponent >> i & 1) && (msbPosition == -1)) {
+            msbPosition = i + 1;
+            break;
+        }
+    }
+    // Compute squarings of p.
+    std::vector<Ciphertext<DCRTPoly>> ciphertexts_squarings;
+    ciphertexts_squarings.push_back(ciphertext);
+    for (int i = 1; i < msbPosition; i++) {
+        ciphertexts_squarings.push_back(cryptoContext->EvalMult(ciphertexts_squarings[i-1], 
+                                                                ciphertexts_squarings[i-1]));
+    }
+    // Select required squarings.
+    std::vector<Ciphertext<DCRTPoly>> ciphertexts_squarings_container;
+    for (int i = 0; i < msbPosition; i++) {
+        if (exponent >> i & 1) {
+            ciphertexts_squarings_container.push_back(ciphertexts_squarings[i]) ;
+        }
+    }
+    // Multiply selected squarings.
+    return cryptoContext->EvalMultMany(ciphertexts_squarings_container);
+}
