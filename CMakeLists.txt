@@ -55,4 +55,6 @@ endif()
 ### ADD YOUR EXECUTABLE(s) HERE
 add_executable(main main.cpp 
                     utilities.cpp utilities.h
-                    crypto_utilities.cpp crypto_utilities.h)
+                    crypto_utilities.cpp crypto_utilities.h
+                    crypto_enc_transform.cpp crypto_enc_transform.h
+                    )
