@@ -11,6 +11,7 @@ void printEncMatRows(std::vector<Ciphertext<DCRTPoly>> &encMatRows, CryptoContex
 
 }
 
+
 void printEncMatElems(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElems, CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair){
     for (int row=0; row < encMatElems.size(); ++row){
         for (int col=0; col < encMatElems.size(); ++col){
@@ -23,7 +24,7 @@ void printEncMatElems(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElem
     }
 }
 
-// Class to initialize rotation keys and masks.
+
 InitRotsMasks::InitRotsMasks(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int slots) :
     slots(slots) {
     // (1) Generate rotation keys for |slots| number of steps.
@@ -39,10 +40,10 @@ InitRotsMasks::InitRotsMasks(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCR
                                                     cryptoContext->MakePackedPlaintext(mask)));
     }
 }
+
 std::vector<Ciphertext<DCRTPoly>> InitRotsMasks::encMasks() { return encMasks_; }
 
 
-// Ciphertext exponentiation, via square and multiply. Multiplicative depth: log(exponent)
 Ciphertext<DCRTPoly> evalExponentiate(Ciphertext<DCRTPoly> &ciphertext, int exponent, 
                                       CryptoContext<DCRTPoly> &cryptoContext) {
     // Get msb position of exponent.
