@@ -54,13 +54,7 @@
 using namespace lbcrypto;
 
 
-void refreshInPlace(Ciphertext<DCRTPoly> &ciphertext, int slots, 
-                    KeyPair<DCRTPoly> keyPair, CryptoContext<DCRTPoly> &cryptoContext){
-    Plaintext plaintextExpRes;
-    cryptoContext->Decrypt(keyPair.secretKey, ciphertext, &plaintextExpRes); 
-    plaintextExpRes->SetLength(slots); auto payload = plaintextExpRes->GetPackedValue();
-    ciphertext = cryptoContext->Encrypt(keyPair.publicKey, cryptoContext->MakePackedPlaintext(payload));
-}
+
 
 
 int main(int argc, char* argv[]) {
@@ -296,7 +290,7 @@ int main(int argc, char* argv[]) {
     // auto encMatrixExp = evalMatrixExp(encRowsAdjMatrix,n,cryptoContext,initRotsMasks,cryptoOpsLogger); 
     auto encMatrixExpElems = evalMatSqMul(encRowsAdjMatrix,n,cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair);
     auto encMatrixExp = encElem2Rows(encMatrixExpElems,cryptoContext,initRotsMasks,cryptoOpsLogger);
-    std::cout << "Total matrix exponentiation time: " << TOC(t) << " ms" << std::endl;
+    std::cout << "Online part 2a - Matrix exponentiation time: " << TOC(t) << " ms" << std::endl;
     // std::cout << "Total homomorphic computation time: " << cryptoOpsLogger.totalTime() << " ms" << std::endl;
     // std::cout << "Total homomorphic multiplications: " << cryptoOpsLogger.multOps()+cryptoOpsLogger.innerProdOps() << std::endl;
     // std::cout << "Total homomorphic multiplication time: " << cryptoOpsLogger.multTime()+cryptoOpsLogger.innerProdTime() << " ms" << std::endl;
@@ -305,10 +299,10 @@ int main(int argc, char* argv[]) {
     for (int row=0; row < n; ++row){ refreshInPlace(encMatrixExp[row],n,keyPair, cryptoContext); } 
 
     // u: Derive computed cycle.
+    TIC(t);
     auto enc_u = evalVecMatrixMult(encOnes,encMatrixExp,cryptoContext,initRotsMasks,cryptoOpsLogger); // TODO: only publickey required, create dedicated init class.
     enc_u = evalNotEqualZero(enc_u,cryptoContext,initNotEqualZero); 
-    
-    std::cout << "Online part 2 - Matrix exponentiation time: " << processingTime << "ms" << std::endl;
+    std::cout << "Online part 2b - Cycle computation: " << TOC(t) << "ms" << std::endl;
 
     //----------------------------------------------------------
     // (3) Update user availability and outputs.
@@ -318,7 +312,6 @@ int main(int argc, char* argv[]) {
     refreshInPlace(enc_u,n,keyPair, cryptoContext);
 
     TIC(t);
-
     // t: Compute current preference index for all users in packed ciphertext.
     std::vector<Ciphertext<DCRTPoly>> enc_elements;
     for (int user=0; user < n; ++user){ 
@@ -341,8 +334,7 @@ int main(int argc, char* argv[]) {
     encUserAvailability = cryptoContext->EvalAdd(encOnes,
                                                  cryptoContext->EvalMult(enc_output_reduced, encNegOnes));
 
-    processingTime = TOC(t);
-    std::cout << "Online part 3 - User availability & output update time: " << processingTime << "ms" << std::endl;
+    std::cout << "Online part 3 - User availability & output update time: " << TOC(t) << "ms" << std::endl;
     
     // Print output vector (-1 means not on cycle).
     Plaintext plaintext;

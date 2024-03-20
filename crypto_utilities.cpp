@@ -71,3 +71,12 @@ Ciphertext<DCRTPoly> evalExponentiate(Ciphertext<DCRTPoly> &ciphertext, int expo
     // Multiply selected squarings.
     return cryptoContext->EvalMultMany(ciphertexts_squarings_container);
 }
+
+
+void refreshInPlace(Ciphertext<DCRTPoly> &ciphertext, int slots, 
+                    KeyPair<DCRTPoly> keyPair, CryptoContext<DCRTPoly> &cryptoContext){
+    Plaintext plaintextExpRes;
+    cryptoContext->Decrypt(keyPair.secretKey, ciphertext, &plaintextExpRes); 
+    plaintextExpRes->SetLength(slots); auto payload = plaintextExpRes->GetPackedValue();
+    ciphertext = cryptoContext->Encrypt(keyPair.publicKey, cryptoContext->MakePackedPlaintext(payload));
+}
