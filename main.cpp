@@ -828,7 +828,18 @@ int main(int argc, char* argv[]) {
     // printEncMatRows(encMatResRows,cryptoContext,keyPair);
 
     // return 0;
-                                                  
+
+    //==========================================================
+    // Test for single multiplication.
+    //==========================================================
+
+    // TIC(t);
+    // auto res = cryptoContext->EvalMult(encOnes,encOnes);
+    // cryptoContext->ModReduceInPlace(res);
+    // processingTime = TOC(t);
+    // std::cout << "Multiplication & mod reduction: " << processingTime << "ms" << std::endl;
+    // return 0;
+
     //==========================================================
     // Online phase.
     //==========================================================
@@ -842,13 +853,8 @@ int main(int argc, char* argv[]) {
     // (1) Update adjacency matix.
     //----------------------------------------------------------
     
-    // TIC(t);
     CryptoOpsLogger cryptoOpsLogger;
-    // auto res = cryptoContext->EvalMult(encOnes,encOnes);
-    // cryptoContext->ModReduceInPlace(res);
-    // processingTime = TOC(t);
-    // cryptoOpsLogger.logMult(TOC(t));
-    // std::cout << "Multiplication & mod reduction: " << cryptoOpsLogger.multTime() << "ms" << std::endl;
+
 
     TIC(t);
 
