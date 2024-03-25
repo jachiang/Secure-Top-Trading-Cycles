@@ -77,9 +77,9 @@ int main(int argc, char* argv[]) {
     parameters.SetPlaintextModulus(chosen_ptxtmodulus);
     // p = 65537, depth = 13 -> "Please provide a q and a m satisfying: (q-1)/m is an integer. The values of primeModulus = 65537 and m = 131072 do not."
     // Fermats thm works for p = 786433, dep = 20.
-    parameters.SetMultiplicativeDepth(12);
+    int chosen_depth = 2;
+    parameters.SetMultiplicativeDepth(chosen_depth);
     parameters.SetMaxRelinSkDeg(3);
-
 
     CryptoContext<DCRTPoly> cryptoContext = GenCryptoContext(parameters);
     std::cout << "Ring dimension N: " << cryptoContext->GetRingDimension() << std::endl;
@@ -225,15 +225,48 @@ int main(int argc, char* argv[]) {
     // return 0;
 
     //==========================================================
-    // Test for single multiplication.
+    // Runtime test for single multiplication.
     //==========================================================
 
-    // TIC(t);
-    // auto res = cryptoContext->EvalMult(encOnes,encOnes);
-    // cryptoContext->ModReduceInPlace(res);
-    // processingTime = TOC(t);
-    // std::cout << "Multiplication & mod reduction: " << processingTime << "ms" << std::endl;
+    // auto res = encOnes;
+    // for (int i = 0; i<chosen_depth; ++i){
+    //     TIC(t);
+    //     res = cryptoContext->EvalMult(res,res);
+    //     cryptoContext->ModReduceInPlace(res);
+    //     processingTime = TOC(t);
+    //     std::cout << "Multiplication & mod reduction: " << processingTime << "ms" << std::endl;
+    // }
+
     // return 0;
+
+    //==========================================================
+    // Ciphertext packing test.
+    //==========================================================
+
+    // std::vector<int64_t> testInputs1;
+    // std::vector<int64_t> testInputs2;
+
+    // auto slots = cryptoContext->GetRingDimension();
+
+    // for (int i = 0; i < slots; ++i) {
+    //     testInputs1.push_back(2);
+    //     testInputs2.push_back(3);
+    // }
+    // auto encTestInputs1 = cryptoContext->Encrypt(keyPair.publicKey,
+    //                                              cryptoContext->MakePackedPlaintext(testInputs1));
+    // auto encTestInputs2 = cryptoContext->Encrypt(keyPair.publicKey,
+    //                                              cryptoContext->MakePackedPlaintext(testInputs2));
+    
+    // auto resTest = cryptoContext->EvalMult(encTestInputs1, encTestInputs2); 
+    // cryptoContext->ModReduceInPlace(resTest);
+    
+    // Plaintext testPlaintext;
+    // cryptoContext->Decrypt(keyPair.secretKey, resTest, &testPlaintext); 
+    // testPlaintext->SetLength(slots); auto testPayload = testPlaintext->GetPackedValue();
+    // std::cout << testPayload << std::endl;
+
+    // return 0;
+
 
     //==========================================================
     // Online phase.
@@ -242,14 +275,13 @@ int main(int argc, char* argv[]) {
     // Init output ciphertext.
     auto enc_output = encNegOnes; // -1 output => not on cycle.
 
-    // TODO: loop over n rounds.
+    // Log crypto operations.
+    CryptoOpsLogger cryptoOpsLogger;
+
 
     //----------------------------------------------------------
     // (1) Update adjacency matix.
     //----------------------------------------------------------
-    
-    CryptoOpsLogger cryptoOpsLogger;
-
 
     TIC(t);
 
