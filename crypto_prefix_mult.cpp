@@ -68,7 +68,7 @@ Ciphertext<DCRTPoly> evalPreserveLeadOne(Ciphertext<DCRTPoly> &ciphertext,
     // x0, x1*y0 ,...,   xn*yn-1
     auto result = cryptoContext->EvalMult(ciphertext,
                                    cryptoContext->EvalAdd(initPreserveLeadOne.encLeadingOne(), 
-                                   cryptoContext->EvalRotate(encPrefix,-1)));
+                                                          cryptoContext->EvalRotate(encPrefix,-1)));
     cryptoContext->ModReduceInPlace(result);
     return result;
 }
