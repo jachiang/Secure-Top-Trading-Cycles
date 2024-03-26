@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
     parameters.SetPlaintextModulus(chosen_ptxtmodulus);
     // p = 65537, depth = 13 -> "Please provide a q and a m satisfying: (q-1)/m is an integer. The values of primeModulus = 65537 and m = 131072 do not."
     // Fermats thm works for p = 786433, dep = 20.
-    int chosen_depth = 9;
+    int chosen_depth = 7;
     parameters.SetMultiplicativeDepth(chosen_depth);
     parameters.SetMaxRelinSkDeg(3);
 
@@ -187,7 +187,7 @@ int main(int argc, char* argv[]) {
     auto encOnes = cryptoContext->Encrypt(keyPair.publicKey,
                                                       cryptoContext->MakePackedPlaintext(ones));
     auto encZeros = cryptoContext->Encrypt(keyPair.publicKey,
-                                            cryptoContext->MakePackedPlaintext(zeros));
+                                           cryptoContext->MakePackedPlaintext(zeros));
     auto encNegOnes = cryptoContext->Encrypt(keyPair.publicKey,
                                              cryptoContext->MakePackedPlaintext(negOnes));
     auto encRange = cryptoContext->Encrypt(keyPair.publicKey,
@@ -301,13 +301,13 @@ int main(int argc, char* argv[]) {
         for (int user = 0; user < n; ++user){
             // Sort availability according to user preference.
             auto encUserAvailablePref = evalMatrixVecMult(encUserPrefList[user], encUserAvailability,
-                                                          cryptoContext, initRotsMasks);
+                                                          cryptoContext, initRotsMasks); // 2 mult-depth
             // Preserve highest, available preference.
-            auto encUserFirstAvailablePref = evalPreserveLeadOne(encUserAvailablePref, cryptoContext, initPreserveLeadOne);
+            auto encUserFirstAvailablePref = evalPreserveLeadOne(encUserAvailablePref, cryptoContext, initPreserveLeadOne); // 2+log(n) mult-depth
 
             // Transpose back to obtain adjacency matrix row.
             encRowsAdjMatrix.push_back(evalMatrixVecMult(encUserPrefTransposedList[user], encUserFirstAvailablePref,
-                                                         cryptoContext, initRotsMasks));
+                                                         cryptoContext, initRotsMasks)); // 2 mult-depth
         }
 
         std::cout << "Adjacency Matrix: " << std::endl;
