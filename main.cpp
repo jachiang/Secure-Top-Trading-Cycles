@@ -72,12 +72,14 @@ int main(int argc, char* argv[]) {
     // ciphertexts, i.e., ceiling{log2{7}} Max depth is set to 3 (second 3) to
     // generate homomorphic evaluation multiplication keys for s^2 and s^3
     CCParams<CryptoContextBGVRNS> parameters;
+    CCParams<CryptoContextBGVRNS> params2;
+    CCParams<CryptoContextBGVRNS> params3;
 
     int chosen_ptxtmodulus = 65537;
     parameters.SetPlaintextModulus(chosen_ptxtmodulus);
     // p = 65537, depth = 13 -> "Please provide a q and a m satisfying: (q-1)/m is an integer. The values of primeModulus = 65537 and m = 131072 do not."
     // Fermats thm works for p = 786433, dep = 20.
-    int chosen_depth = 7;
+    int chosen_depth = 9;
     parameters.SetMultiplicativeDepth(chosen_depth);
     parameters.SetMaxRelinSkDeg(3);
 
@@ -173,9 +175,6 @@ int main(int argc, char* argv[]) {
 
     // Server Offline: Precompute encryptions of constants, initialize rotation keys.
     InitRotsMasks initRotsMasks(cryptoContext,keyPair,n);
-    // InitMatrixExp initMatrixExp(cryptoContext, keyPair, userInputs.size());
-    // InitMatrixVecMult initMatrixVecMult(cryptoContext, keyPair, userInputs.size());
-    // InitPrefixMult initPrefixMult(cryptoContext, keyPair, userInputs.size());
     InitNotEqualZero initNotEqualZero(cryptoContext, keyPair, userInputs.size(), userInputs.size()); // (..., slots, range)
     InitPreserveLeadOne initPreserveLeadOne(cryptoContext,keyPair,n);
     
@@ -293,9 +292,11 @@ int main(int argc, char* argv[]) {
         // (1) Update adjacency matix.
         //----------------------------------------------------------
 
-        TIC(t);
 
         std::vector<Ciphertext<DCRTPoly>> encRowsAdjMatrix;
+
+        // Begin: Timer.
+        TIC(t);
 
         // Generate adjacency matrix for all users.
         for (int user = 0; user < n; ++user){
@@ -318,6 +319,7 @@ int main(int argc, char* argv[]) {
             std::cout << payload << std::endl;
         }
 
+        // End: Timer.
         processingTime = TOC(t);
         std::cout << "Online part 1 - Adjacency matrix update time: " << processingTime << "ms" << std::endl;
 
@@ -328,11 +330,17 @@ int main(int argc, char* argv[]) {
         // (2) Matrix exponentiation for cycle finding.
         //----------------------------------------------------------
 
+        // Matrix exponentiation.
+        // Begin: Timer.
         TIC(t);
+
         // auto encMatrixExp = evalMatrixExp(encRowsAdjMatrix,n,cryptoContext,initRotsMasks,cryptoOpsLogger); 
         auto encMatrixExpElems = evalMatSqMul(encRowsAdjMatrix,n,cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair);
         auto encMatrixExp = encElem2Rows(encMatrixExpElems,cryptoContext,initRotsMasks,cryptoOpsLogger);
-        std::cout << "Online part 2a - Matrix exponentiation time: " << TOC(t) << " ms" << std::endl;
+
+        // End: Timer.
+        processingTime = TOC(t);
+        std::cout << "Online part 2a - Matrix exponentiation: " << processingTime << " ms" << std::endl;
         // std::cout << "Total homomorphic computation time: " << cryptoOpsLogger.totalTime() << " ms" << std::endl;
         // std::cout << "Total homomorphic multiplications: " << cryptoOpsLogger.multOps()+cryptoOpsLogger.innerProdOps() << std::endl;
         // std::cout << "Total homomorphic multiplication time: " << cryptoOpsLogger.multTime()+cryptoOpsLogger.innerProdTime() << " ms" << std::endl;
@@ -340,21 +348,26 @@ int main(int argc, char* argv[]) {
         // Refresh ciphertexts.
         for (int row=0; row < n; ++row){ refreshInPlace(encMatrixExp[row],n,keyPair, cryptoContext); } 
 
-        // u: Derive computed cycle.
+        // Extract computed cycles.
+        // Begin: Timer.
         TIC(t);
         auto enc_u = evalVecMatrixMult(encOnes,encMatrixExp,cryptoContext,initRotsMasks,cryptoOpsLogger); // TODO: only publickey required, create dedicated init class.
         enc_u = evalNotEqualZero(enc_u,cryptoContext,initNotEqualZero); 
-        std::cout << "Online part 2b - Cycle computation: " << TOC(t) << "ms" << std::endl;
-
-        //----------------------------------------------------------
-        // (3) Update user availability and outputs.
-        //----------------------------------------------------------
+        // End: Timer.
+        processingTime = TOC(t);  
+        std::cout << "Online part 2b - Cycle computation: " << processingTime << "ms" << std::endl;
 
         // Refresh ciphertexts.
         refreshInPlace(enc_u,n,keyPair, cryptoContext);
 
+        //----------------------------------------------------------
+        // (3) Update user availability and outputs.
+        //----------------------------------------------------------
+        
+        // Begin: Timer.
         TIC(t);
-        // t: Compute current preference index for all users in packed ciphertext.
+
+        // Compute current preference index (t) for all users in packed ciphertext.
         std::vector<Ciphertext<DCRTPoly>> enc_elements;
         for (int user=0; user < n; ++user){ 
             auto enc_t_user = cryptoContext->EvalInnerProduct(encRowsAdjMatrix[user], encRange,
@@ -376,7 +389,9 @@ int main(int argc, char* argv[]) {
         encUserAvailability = cryptoContext->EvalAdd(encOnes,
                                                      cryptoContext->EvalMult(enc_output_reduced, encNegOnes));
 
-        std::cout << "Online part 3 - User availability & output update time: " << TOC(t) << "ms" << std::endl;
+        // End: Timer.
+        processingTime = TOC(t);  
+        std::cout << "Online part 3 - User availability & output update: " << processingTime << "ms" << std::endl;
         
         // Print output vector (-1 means not on cycle).
         Plaintext plaintext;
@@ -385,9 +400,9 @@ int main(int argc, char* argv[]) {
         std::cout << "Cycle finding result: " << payload << std::endl;
 
         // Print availability vector.
-        cryptoContext->Decrypt(keyPair.secretKey, encUserAvailability, &plaintext); 
-        plaintext->SetLength(n); payload = plaintext->GetPackedValue();
-        std::cout << "Availability vector: " << payload << std::endl;
+        // cryptoContext->Decrypt(keyPair.secretKey, encUserAvailability, &plaintext); 
+        // plaintext->SetLength(n); payload = plaintext->GetPackedValue();
+        // std::cout << "Availability vector: " << payload << std::endl;
 
         // Refresh ciphertexts.
         refreshInPlace(encUserAvailability,n,keyPair, cryptoContext);
