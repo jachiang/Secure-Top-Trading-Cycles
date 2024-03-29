@@ -194,7 +194,7 @@ int main(int argc, char* argv[]) {
 
 
     //==========================================================
-    // Tests for inner product
+    // Tests for inner product with full matrix packing.
     //==========================================================
                
     // std::vector<std::vector<int64_t>> testMatRows1;
