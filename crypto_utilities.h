@@ -31,5 +31,10 @@ Ciphertext<DCRTPoly> evalExponentiate(Ciphertext<DCRTPoly> &ciphertext, int expo
 void refreshInPlace(Ciphertext<DCRTPoly> &ciphertext, int slots, 
                     KeyPair<DCRTPoly> keyPair, CryptoContext<DCRTPoly> &cryptoContext);
 
+// Decrypt and return encryptions of slot elements individually (in the first slot position).
+std::vector<Ciphertext<DCRTPoly>> refreshElems(Ciphertext<DCRTPoly> &ciphertext, int slots, 
+                                               KeyPair<DCRTPoly> keyPair, CryptoContext<DCRTPoly> &cryptoContext);
+
+
 #endif
 

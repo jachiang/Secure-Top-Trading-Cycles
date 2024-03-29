@@ -81,3 +81,17 @@ void refreshInPlace(Ciphertext<DCRTPoly> &ciphertext, int slots,
     plaintextExpRes->SetLength(slots); auto payload = plaintextExpRes->GetPackedValue();
     ciphertext = cryptoContext->Encrypt(keyPair.publicKey, cryptoContext->MakePackedPlaintext(payload));
 }
+
+std::vector<Ciphertext<DCRTPoly>> refreshElems(Ciphertext<DCRTPoly> &ciphertext, int slots, 
+                                               KeyPair<DCRTPoly> keyPair, CryptoContext<DCRTPoly> &cryptoContext){
+    std::vector<Ciphertext<DCRTPoly>> ciphertexts; 
+    Plaintext plaintext;
+    cryptoContext->Decrypt(keyPair.secretKey, ciphertext, &plaintext); 
+    plaintext->SetLength(slots); auto payload = plaintext->GetPackedValue();
+    for (int i = 0; i < slots; i++) {
+        std::vector<int64_t> elementPlaintext(slots,0);
+        elementPlaintext[0] = payload[i];
+        ciphertexts.push_back(cryptoContext->Encrypt(keyPair.publicKey, cryptoContext->MakePackedPlaintext(elementPlaintext)));
+    }
+    return ciphertexts;
+}

@@ -324,7 +324,11 @@ int main(int argc, char* argv[]) {
         std::cout << "Online part 1 - Adjacency matrix update time: " << processingTime << "ms" << std::endl;
 
         // Refresh ciphertexts.
-        for (int row=0; row < n; ++row){ refreshInPlace(encRowsAdjMatrix[row],n, keyPair, cryptoContext); } 
+        std::vector<std::vector<Ciphertext<DCRTPoly>>> encAdjMatrixElems;
+        for (int row=0; row < n; ++row){
+            encAdjMatrixElems.push_back(refreshElems(encRowsAdjMatrix[row],n,keyPair,cryptoContext));
+            refreshInPlace(encRowsAdjMatrix[row],n,keyPair,cryptoContext); // This ciphertext is used in part (3).
+        }
 
         //----------------------------------------------------------
         // (2) Matrix exponentiation for cycle finding.
@@ -335,7 +339,8 @@ int main(int argc, char* argv[]) {
         TIC(t);
 
         // auto encMatrixExp = evalMatrixExp(encRowsAdjMatrix,n,cryptoContext,initRotsMasks,cryptoOpsLogger); 
-        auto encMatrixExpElems = evalMatSqMul(encRowsAdjMatrix,n,cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair);
+        // auto encMatrixExpElems = evalMatSqMul(encRowsAdjMatrix,n,cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair); // TODO: keypair param for debugging
+        auto encMatrixExpElems = evalMatSqMul(encAdjMatrixElems,n,cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair); 
         auto encMatrixExp = encElem2Rows(encMatrixExpElems,cryptoContext,initRotsMasks,cryptoOpsLogger);
 
         // End: Timer.
@@ -346,7 +351,7 @@ int main(int argc, char* argv[]) {
         // std::cout << "Total homomorphic multiplication time: " << cryptoOpsLogger.multTime()+cryptoOpsLogger.innerProdTime() << " ms" << std::endl;
 
         // Refresh ciphertexts.
-        for (int row=0; row < n; ++row){ refreshInPlace(encMatrixExp[row],n,keyPair, cryptoContext); } 
+        for (int row=0; row < n; ++row){ refreshInPlace(encMatrixExp[row],n,keyPair,cryptoContext); } 
 
         // Extract computed cycles.
         // Begin: Timer.
@@ -370,7 +375,8 @@ int main(int argc, char* argv[]) {
         // Compute current preference index (t) for all users in packed ciphertext.
         std::vector<Ciphertext<DCRTPoly>> enc_elements;
         for (int user=0; user < n; ++user){ 
-            auto enc_t_user = cryptoContext->EvalInnerProduct(encRowsAdjMatrix[user], encRange,
+            // Note: encRowsAdjMatrix must be refreshed after (1)
+            auto enc_t_user = cryptoContext->EvalInnerProduct(encRowsAdjMatrix[user], encRange, 
                                                               encRowsAdjMatrix.size());
             enc_t_user = cryptoContext->EvalMult(enc_t_user, initRotsMasks.encMasks()[0]); 
             cryptoContext->ModReduceInPlace(enc_t_user);

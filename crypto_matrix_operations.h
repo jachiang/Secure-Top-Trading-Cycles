@@ -16,9 +16,8 @@ std::vector<std::vector<Ciphertext<DCRTPoly>>> // Element-wise-encrypted output 
                       InitRotsMasks &initRotsMasks,
                       CryptoOpsLogger &cryptoOpsLogger);
 
-
 std::vector<std::vector<std::vector<Ciphertext<DCRTPoly>>>> // Element-wise-encrypted output matrix.
-    evalMatSquarings(std::vector<Ciphertext<DCRTPoly>> &encMatRows, // Row-wise-encrypted input matrix.
+    evalMatSquarings(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElems, // Row-wise-encrypted input matrix.
                      int sqs,
                      CryptoContext<DCRTPoly> &cryptoContext,
                      InitRotsMasks &initRotsMasks,
@@ -27,7 +26,7 @@ std::vector<std::vector<std::vector<Ciphertext<DCRTPoly>>>> // Element-wise-encr
 
 // Fast, but incurs log(n) additional mul depth. 
 std::vector<std::vector<Ciphertext<DCRTPoly>>> 
-        evalMatSqMul(std::vector<Ciphertext<DCRTPoly>> &encRows, 
+        evalMatSqMul(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElems, 
                      int exponent,
                      CryptoContext<DCRTPoly> &cryptoContext,
                      InitRotsMasks &initRotsMasks,
