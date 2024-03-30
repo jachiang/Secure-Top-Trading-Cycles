@@ -33,6 +33,42 @@ Ciphertext<DCRTPoly> evalPrefixMult(Ciphertext<DCRTPoly> &ciphertext,
     return ciphertext1;
 } 
 
+
+// TODO: Take InitRotMask as input.
+Ciphertext<DCRTPoly> evalPrefixAdd(Ciphertext<DCRTPoly> &ciphertext,
+                                   int slots, CryptoContext<DCRTPoly> &cryptoContext) {
+    // Assert slots leq rotation keys. 
+    // assert(initRotsMasks.slots >= slots);
+
+    // Prefix computation: 
+    int levels = std::ceil(std::log2(slots));
+        
+    // Precompute rotation steps and plaintext masks. 
+    // TODO: Move to precomputation (low priority, no cryptographic ops).
+    std::vector<int32_t> rotSteps; 
+    // std::vector<Plaintext> leadingOnesPlaintxts;
+    for (size_t i = 0; i < levels; i++) { 
+        rotSteps.push_back(std::pow(2, i)); 
+        // TODO: generate rotation keys.
+        // std::vector<int64_t> prefixOnes(slots,0); 
+        // for (size_t j = 0; j < rotSteps.back(); j++) { prefixOnes[j] = 1; }
+        // leadingOnesPlaintxts.push_back(cryptoContext->MakePackedPlaintext(prefixOnes));
+    }
+
+    // Compute prefix addition.
+    auto ciphertext1 = ciphertext;
+    for (size_t i = 0; i < levels; i++) {
+        auto ciphertext2 = cryptoContext->EvalRotate(ciphertext1, rotSteps[i]);
+        // // Pad ciphertext2 with leading 1's.        
+        // ciphertext2 = cryptoContext->EvalAdd(ciphertext2, leadingOnesPlaintxts[i]);
+        // add ciphertext1 and ciphertext 2
+        ciphertext1 = cryptoContext->EvalAdd(ciphertext1, ciphertext2);
+        // cryptoContext->ModReduceInPlace(ciphertext1);
+    }
+    return ciphertext1;
+} 
+
+
 InitPreserveLeadOne::InitPreserveLeadOne(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int slots) : slots(slots)
     // : initPrefixMult(cryptoContext, keyPair, slots), slots(slots) 
 {

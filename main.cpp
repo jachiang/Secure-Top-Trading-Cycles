@@ -197,45 +197,57 @@ int main(int argc, char* argv[]) {
     // Tests for inner product with full matrix packing.
     //==========================================================
                
-    // std::vector<std::vector<int64_t>> testMatRows1;
-    // std::vector<std::vector<int64_t>> testMatRows2;
-    // testMatRows1.push_back({1, 2, 3, 4});
-    // testMatRows1.push_back({5, 6, 7, 8});
-    // testMatRows1.push_back({9, 10, 11, 12});
-    // testMatRows1.push_back({13, 14, 15, 16});
-    // testMatRows2.push_back({1, 2, 3, 4});
-    // testMatRows2.push_back({5, 6, 7, 8});
-    // testMatRows2.push_back({9, 10, 11, 12});
-    // testMatRows2.push_back({13, 14, 15, 16});
-    // auto dimMat = testMatRows1.size();
-    // std::vector<int64_t> packedRows;
-    // std::vector<int64_t> packedCols;
-    // for (int row = 0; row < dimMat; row++){
-    //     for (int col = 0; col < dimMat; col++){ 
-    //         for (int i = 0; i < dimMat; i++) {
-    //             packedRows.push_back(testMatRows1[row][i]);
-    //             packedCols.push_back(testMatRows2[i][col]);
-    //         }
-    //         packedRows.push_back(0);
-    //         packedCols.push_back(0);
-    //     }
-    // }
-    // auto testEncMat1 = cryptoContext->Encrypt(keyPair.publicKey,cryptoContext->MakePackedPlaintext(packedRows));
-    // auto testEncMat2 = cryptoContext->Encrypt(keyPair.publicKey,cryptoContext->MakePackedPlaintext(packedCols));
-    // auto encRes = cryptoContext->EvalInnerProduct(testEncMat1, testEncMat2, dimMat);
+    std::vector<std::vector<int64_t>> testMatRows1;
+    std::vector<std::vector<int64_t>> testMatRows2;
+    testMatRows1.push_back({4, 1, 2, 3, 1});
+    testMatRows1.push_back({4, 3, 2, 1, 1});
+    testMatRows1.push_back({4, 1, 1, 2, 3});
+    testMatRows1.push_back({1, 3, 4, 1, 2});
+    testMatRows1.push_back({3, 1, 2, 1, 4});
 
-    // Plaintext plaintext;
-    // cryptoContext->Decrypt(keyPair.secretKey, encRes, &plaintext); 
-    // plaintext->SetLength((dimMat+1)*dimMat*dimMat); auto payload = plaintext->GetPackedValue();
+    testMatRows2.push_back({4, 1, 2, 3, 1});
+    testMatRows2.push_back({4, 3, 2, 1, 1});
+    testMatRows2.push_back({4, 1, 1, 2, 3});
+    testMatRows2.push_back({1, 3, 4, 1, 2});
+    testMatRows2.push_back({3, 1, 2, 1, 4});
 
-    // for (int row = 0; row < dimMat; row++){
-    //     std::vector<int64_t> payloadRow;
-    //     for (int i = 0; i < dimMat; i++) { payloadRow.push_back(payload[i*(dimMat+1)+row*dimMat*(dimMat+1)]); } 
-    //     std::cout << "Row: " << payloadRow << std::endl;
-    // }
-    // std::cout << "Full vector: " << payload << std::endl;
+    auto dimMat = testMatRows1.size();
+    int k_ceil = std::ceil(std::log2(dimMat));
+    int slotsPadded =std::pow(2, k_ceil);
 
-    // return 0;
+    std::vector<int64_t> packedRows;
+    std::vector<int64_t> packedCols;
+    for (int row = 0; row < dimMat; row++){
+        for (int col = 0; col < dimMat; col++){ 
+            for (int i = 0; i < dimMat; i++) {
+                packedRows.push_back(testMatRows1[row][i]);
+                packedCols.push_back(testMatRows2[i][col]);
+            }
+            for (int i = 0; i < slotsPadded-dimMat; i++) {
+                packedRows.push_back(0);
+                packedCols.push_back(0);
+            }        
+        }
+    }
+    auto testEncMat1 = cryptoContext->Encrypt(keyPair.publicKey,cryptoContext->MakePackedPlaintext(packedRows));
+    auto testEncMat2 = cryptoContext->Encrypt(keyPair.publicKey,cryptoContext->MakePackedPlaintext(packedCols));
+    auto encResMult= cryptoContext->EvalMult(testEncMat1, testEncMat2);
+    auto encResInnerProd = evalPrefixAdd(encResMult,slotsPadded,cryptoContext);
+
+    // Extract individual ciphertexts and rotate to first slot.
+    std::vector<std::vector<Ciphertext<DCRTPoly>>> encElemsMat;
+    for (int row = 0; row < dimMat; row++){
+        std::vector<Ciphertext<DCRTPoly>> encElemsRow;
+        for (int col = 0; col < dimMat; col++){
+            auto encMaskedElem = cryptoContext->EvalMult(encResInnerProd, initRotsMasks.encMasksFullyPacked()[row*dimMat+col]);
+            cryptoContext->ModReduceInPlace(encMaskedElem);
+            encElemsRow.push_back(cryptoContext->EvalRotate(encMaskedElem,(row*dimMat*slotsPadded+col*slotsPadded)));
+        }
+        encElemsMat.push_back(encElemsRow);
+    }
+    printEncMatElems(encElemsMat,cryptoContext,keyPair);
+
+    return 0;
 
 
     //==========================================================

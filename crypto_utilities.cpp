@@ -28,10 +28,14 @@ void printEncMatElems(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElem
 InitRotsMasks::InitRotsMasks(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int slots) :
     slots(slots) {
     std::vector<int32_t> rotIndices;
+    int k_ceil = std::ceil(std::log2(slots));
+    int slots_padded = std::pow(2,k_ceil);
     // (1a) Generate rotation keys for +/-[slots] number of steps.
     for (size_t i = 0; i <= slots; i++) { rotIndices.push_back(-i); rotIndices.push_back(i);}
-    // (1b) Generate rotation keys for -i*|slots+1| number of steps.
-    for (size_t i = 1; i < slots*slots; i++) { rotIndices.push_back(-i*(slots+1)); }
+    // (1b) Generate rotation keys for prefix addition/multiplication.
+    for (size_t i = 0; i <= k_ceil; i++) { rotIndices.push_back(std::pow(2,i)); }
+    // (1c) Generate rotation keys for matrix packing.
+    for (size_t i = 0; i <= slots*slots; i++) { rotIndices.push_back(i*slots_padded); }
     cryptoContext->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
     // (2)Generate Eval Sum Key for EvalInnerProduct.
     cryptoContext->EvalSumKeyGen(keyPair.secretKey);
@@ -43,7 +47,7 @@ InitRotsMasks::InitRotsMasks(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCR
     }
     // (3b) Generate ciphertext masks for extraction of slot values in fully packed ciphertexts.
     for (size_t elem=0 ; elem < slots*slots ; ++elem){ 
-        std::vector<int64_t> mask(slots*slots*(slots+1),0); mask[elem*(slots+1)] = 1;
+        std::vector<int64_t> mask(slots*slots*slots_padded,0); mask[elem*slots_padded] = 1;
         encMasksFullyPacked_.push_back(cryptoContext->Encrypt(keyPair.publicKey,
                                                               cryptoContext->MakePackedPlaintext(mask)));
     }
