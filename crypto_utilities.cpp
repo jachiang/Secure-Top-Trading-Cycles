@@ -1,6 +1,14 @@
 #include "crypto_utilities.h"
 
 
+void printEnc(Ciphertext<DCRTPoly> &cipher, int slots, CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair){
+    Plaintext plaintext;
+    cryptoContext->Decrypt(keyPair.secretKey, cipher, &plaintext); 
+    plaintext->SetLength(slots); auto payload = plaintext->GetPackedValue();
+    std::cout << payload << std::endl;
+}
+
+
 void printEncMatRows(std::vector<Ciphertext<DCRTPoly>> &encMatRows, CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair){
     for (int row=0; row < encMatRows.size(); ++row){
         Plaintext plaintext;
@@ -8,7 +16,6 @@ void printEncMatRows(std::vector<Ciphertext<DCRTPoly>> &encMatRows, CryptoContex
         plaintext->SetLength(encMatRows.size()); auto payload = plaintext->GetPackedValue();
         std::cout << payload << std::endl;
     }
-
 }
 
 

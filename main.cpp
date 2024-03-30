@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
     parameters.SetPlaintextModulus(chosen_ptxtmodulus);
     // p = 65537, depth = 13 -> "Please provide a q and a m satisfying: (q-1)/m is an integer. The values of primeModulus = 65537 and m = 131072 do not."
     // Fermats thm works for p = 786433, dep = 20.
-    int chosen_depth = 9;
+    int chosen_depth = 11;
     parameters.SetMultiplicativeDepth(chosen_depth);
     parameters.SetMaxRelinSkDeg(3);
 
@@ -137,11 +137,20 @@ int main(int argc, char* argv[]) {
 
     // Offline: User preferences.
     std::vector<std::vector<int64_t>> userInputs;
-    userInputs.push_back({4, 1, 2, 3, 0});
-    userInputs.push_back({4, 3, 2, 1, 0});
-    userInputs.push_back({4, 1, 0, 2, 3});
-    userInputs.push_back({1, 3, 4, 0, 2});
-    userInputs.push_back({3, 1, 2, 0, 4});
+
+    // userInputs.push_back({4, 1, 2, 3, 0});
+    // userInputs.push_back({4, 3, 2, 1, 0});
+    // userInputs.push_back({4, 1, 0, 2, 3});
+    // userInputs.push_back({1, 3, 4, 0, 2});
+    // userInputs.push_back({3, 1, 2, 0, 4});
+
+    userInputs.push_back({4, 1, 2, 3, 0, 5});
+    userInputs.push_back({4, 3, 2, 1, 0, 5});
+    userInputs.push_back({4, 1, 0, 2, 3, 5});
+    userInputs.push_back({1, 3, 4, 0, 2, 5});
+    userInputs.push_back({3, 1, 2, 0, 4, 5});
+    userInputs.push_back({3, 1, 2, 0, 4, 5});
+
     auto n = userInputs.size();
 
     // Offline: User preference as a permutation matrix.
@@ -197,57 +206,71 @@ int main(int argc, char* argv[]) {
     // Tests for inner product with full matrix packing.
     //==========================================================
                
-    std::vector<std::vector<int64_t>> testMatRows1;
-    std::vector<std::vector<int64_t>> testMatRows2;
-    testMatRows1.push_back({4, 1, 2, 3, 1});
-    testMatRows1.push_back({4, 3, 2, 1, 1});
-    testMatRows1.push_back({4, 1, 1, 2, 3});
-    testMatRows1.push_back({1, 3, 4, 1, 2});
-    testMatRows1.push_back({3, 1, 2, 1, 4});
+    // std::vector<std::vector<int64_t>> testMatRows1;
+    // std::vector<std::vector<int64_t>> testMatRows2;
+    // testMatRows1.push_back({4, 1, 2, 3, 1});
+    // testMatRows1.push_back({4, 3, 2, 1, 1});
+    // testMatRows1.push_back({4, 1, 1, 2, 3});
+    // testMatRows1.push_back({1, 3, 4, 1, 2});
+    // testMatRows1.push_back({3, 1, 2, 1, 4});
 
-    testMatRows2.push_back({4, 1, 2, 3, 1});
-    testMatRows2.push_back({4, 3, 2, 1, 1});
-    testMatRows2.push_back({4, 1, 1, 2, 3});
-    testMatRows2.push_back({1, 3, 4, 1, 2});
-    testMatRows2.push_back({3, 1, 2, 1, 4});
+    // testMatRows2.push_back({4, 1, 2, 3, 1});
+    // testMatRows2.push_back({4, 3, 2, 1, 1});
+    // testMatRows2.push_back({4, 1, 1, 2, 3});
+    // testMatRows2.push_back({1, 3, 4, 1, 2});
+    // testMatRows2.push_back({3, 1, 2, 1, 4});
 
-    auto dimMat = testMatRows1.size();
-    int k_ceil = std::ceil(std::log2(dimMat));
-    int slotsPadded =std::pow(2, k_ceil);
+    // testMatRows1.push_back({4, 1, 2, 3, 0, 1});
+    // testMatRows1.push_back({4, 3, 2, 1, 0, 1});
+    // testMatRows1.push_back({4, 1, 0, 2, 3, 1});
+    // testMatRows1.push_back({1, 3, 4, 0, 2, 1});
+    // testMatRows1.push_back({3, 1, 2, 0, 4, 1});
+    // testMatRows1.push_back({3, 1, 2, 0, 4, 1});
 
-    std::vector<int64_t> packedRows;
-    std::vector<int64_t> packedCols;
-    for (int row = 0; row < dimMat; row++){
-        for (int col = 0; col < dimMat; col++){ 
-            for (int i = 0; i < dimMat; i++) {
-                packedRows.push_back(testMatRows1[row][i]);
-                packedCols.push_back(testMatRows2[i][col]);
-            }
-            for (int i = 0; i < slotsPadded-dimMat; i++) {
-                packedRows.push_back(0);
-                packedCols.push_back(0);
-            }        
-        }
-    }
-    auto testEncMat1 = cryptoContext->Encrypt(keyPair.publicKey,cryptoContext->MakePackedPlaintext(packedRows));
-    auto testEncMat2 = cryptoContext->Encrypt(keyPair.publicKey,cryptoContext->MakePackedPlaintext(packedCols));
-    auto encResMult= cryptoContext->EvalMult(testEncMat1, testEncMat2);
-    auto encResInnerProd = evalPrefixAdd(encResMult,slotsPadded,cryptoContext);
+    // testMatRows2.push_back({4, 1, 2, 3, 0, 1});
+    // testMatRows2.push_back({4, 3, 2, 1, 0, 1});
+    // testMatRows2.push_back({4, 1, 0, 2, 3, 1});
+    // testMatRows2.push_back({1, 3, 4, 0, 2, 1});
+    // testMatRows2.push_back({3, 1, 2, 0, 4, 1});
+    // testMatRows2.push_back({3, 1, 2, 0, 4, 1});
 
-    // Extract individual ciphertexts and rotate to first slot.
-    std::vector<std::vector<Ciphertext<DCRTPoly>>> encElemsMat;
-    for (int row = 0; row < dimMat; row++){
-        std::vector<Ciphertext<DCRTPoly>> encElemsRow;
-        for (int col = 0; col < dimMat; col++){
-            auto encMaskedElem = cryptoContext->EvalMult(encResInnerProd, initRotsMasks.encMasksFullyPacked()[row*dimMat+col]);
-            cryptoContext->ModReduceInPlace(encMaskedElem);
-            encElemsRow.push_back(cryptoContext->EvalRotate(encMaskedElem,(row*dimMat*slotsPadded+col*slotsPadded)));
-        }
-        encElemsMat.push_back(encElemsRow);
-    }
-    printEncMatElems(encElemsMat,cryptoContext,keyPair);
+    // auto dimMat = testMatRows1.size();
+    // int k_ceil = std::ceil(std::log2(dimMat));
+    // int slotsPadded =std::pow(2, k_ceil);
 
-    return 0;
+    // std::vector<int64_t> packedRows;
+    // std::vector<int64_t> packedCols;
+    // for (int row = 0; row < dimMat; row++){
+    //     for (int col = 0; col < dimMat; col++){ 
+    //         for (int i = 0; i < dimMat; i++) {
+    //             packedRows.push_back(testMatRows1[row][i]);
+    //             packedCols.push_back(testMatRows2[i][col]);
+    //         }
+    //         for (int i = 0; i < slotsPadded-dimMat; i++) {
+    //             packedRows.push_back(0);
+    //             packedCols.push_back(0);
+    //         }        
+    //     }
+    // }
+    // auto testEncMat1 = cryptoContext->Encrypt(keyPair.publicKey,cryptoContext->MakePackedPlaintext(packedRows));
+    // auto testEncMat2 = cryptoContext->Encrypt(keyPair.publicKey,cryptoContext->MakePackedPlaintext(packedCols));
+    // auto encResMult= cryptoContext->EvalMult(testEncMat1, testEncMat2);
+    // auto encResInnerProd = evalPrefixAdd(encResMult,slotsPadded,cryptoContext);
+
+    // // Extract individual ciphertexts and rotate to first slot.
+    // std::vector<std::vector<Ciphertext<DCRTPoly>>> encElemsMat;
+    // for (int row = 0; row < dimMat; row++){
+    //     std::vector<Ciphertext<DCRTPoly>> encElemsRow;
+    //     for (int col = 0; col < dimMat; col++){
+    //         auto encMaskedElem = cryptoContext->EvalMult(encResInnerProd, initRotsMasks.encMasksFullyPacked()[row*dimMat+col]);
+    //         cryptoContext->ModReduceInPlace(encMaskedElem);
+    //         encElemsRow.push_back(cryptoContext->EvalRotate(encMaskedElem,(row*dimMat*slotsPadded+col*slotsPadded)));
+    //     }
+    //     encElemsMat.push_back(encElemsRow);
+    // }
+    // printEncMatElems(encElemsMat,cryptoContext,keyPair);
+
+    // return 0;
 
 
     //==========================================================
@@ -413,13 +436,18 @@ int main(int argc, char* argv[]) {
         // Begin: Timer.
         TIC(t);
         auto enc_u = evalVecMatrixMult(encOnes,encMatrixExp,cryptoContext,initRotsMasks,cryptoOpsLogger); // TODO: only publickey required, create dedicated init class.
+
         enc_u = evalNotEqualZero(enc_u,cryptoContext,initNotEqualZero); 
         // End: Timer.
         processingTime = TOC(t);  
         std::cout << "Online part 2b - Cycle computation: " << processingTime << "ms" << std::endl;
 
+
+
         // Refresh ciphertexts.
         refreshInPlace(enc_u,n,keyPair, cryptoContext);
+
+
 
         //----------------------------------------------------------
         // (3) Update user availability and outputs.
@@ -455,16 +483,9 @@ int main(int argc, char* argv[]) {
         processingTime = TOC(t);  
         std::cout << "Online part 3 - User availability & output update: " << processingTime << "ms" << std::endl;
         
-        // Print output vector (-1 means not on cycle).
-        Plaintext plaintext;
-        cryptoContext->Decrypt(keyPair.secretKey, enc_output, &plaintext); 
-        plaintext->SetLength(n); auto payload = plaintext->GetPackedValue();
-        std::cout << "Cycle finding result: " << payload << std::endl;
-
         // Print availability vector.
-        // cryptoContext->Decrypt(keyPair.secretKey, encUserAvailability, &plaintext); 
-        // plaintext->SetLength(n); payload = plaintext->GetPackedValue();
-        // std::cout << "Availability vector: " << payload << std::endl;
+        std::cout << "Availability vector: "; printEnc(encUserAvailability,n,cryptoContext,keyPair); 
+        std::cout << std::endl;
 
         // Refresh ciphertexts.
         refreshInPlace(encUserAvailability,n,keyPair, cryptoContext);

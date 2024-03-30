@@ -11,6 +11,7 @@ class InitNotEqualZero {
 public:
     InitNotEqualZero(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int slots, int range);
     Ciphertext<DCRTPoly> encOne();
+    Ciphertext<DCRTPoly> encNegOne();
     Ciphertext<DCRTPoly> encInvFactorial();
     std::vector<Ciphertext<DCRTPoly>> encNegRange();
 
@@ -19,6 +20,7 @@ public:
 
 private:
     Ciphertext<DCRTPoly> encOne_;
+    Ciphertext<DCRTPoly> encNegOne_;
     Ciphertext<DCRTPoly> encInvFactorial_;
     std::vector<Ciphertext<DCRTPoly>> encNegRange_;
 };

@@ -7,6 +7,7 @@ using namespace lbcrypto;
 
 
 // Helper decrypt and print functions for debugging.
+void printEnc(Ciphertext<DCRTPoly> &ciphertext, int slots, CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair);
 void printEncMatRows(std::vector<Ciphertext<DCRTPoly>> &encMatRows, CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair);
 void printEncMatElems(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElems, CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair);
 
