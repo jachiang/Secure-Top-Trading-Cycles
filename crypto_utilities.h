@@ -18,10 +18,13 @@ public:
     InitRotsMasks(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int slots);
     std::vector<Ciphertext<DCRTPoly>> encMasks();
     std::vector<Ciphertext<DCRTPoly>> encMasksFullyPacked();
+    Ciphertext<DCRTPoly> encZeroes();
+
     const int slots;
 private:
     std::vector<Ciphertext<DCRTPoly>> encMasks_;
     std::vector<Ciphertext<DCRTPoly>> encMasksFullyPacked_;
+    Ciphertext<DCRTPoly> encZeroes_;
 };
 
 

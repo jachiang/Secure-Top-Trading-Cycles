@@ -5,6 +5,7 @@
 #include "utilities.h"
 #include "crypto_utilities.h"
 #include "crypto_enc_transform.h"
+#include "crypto_prefix_mult.h"
 
 using namespace lbcrypto;
 
@@ -12,6 +13,7 @@ using namespace lbcrypto;
 
 std::vector<std::vector<Ciphertext<DCRTPoly>>> // Element-wise-encrypted output matrix.
     evalMatrixMul2Pow(std::vector<std::vector<std::vector<Ciphertext<DCRTPoly>>>> &encMatsElems, // Elem-wise encrypted input matrices.
+                      int packingMode, // 0: row/col | 1: full matrix
                       CryptoContext<DCRTPoly> &cryptoContext,
                       InitRotsMasks &initRotsMasks,
                       CryptoOpsLogger &cryptoOpsLogger);
@@ -19,6 +21,7 @@ std::vector<std::vector<Ciphertext<DCRTPoly>>> // Element-wise-encrypted output 
 std::vector<std::vector<std::vector<Ciphertext<DCRTPoly>>>> // Element-wise-encrypted output matrix.
     evalMatSquarings(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElems, // Row-wise-encrypted input matrix.
                      int sqs,
+                     int packingMode, // 0: row/col | 1: full matrix
                      CryptoContext<DCRTPoly> &cryptoContext,
                      InitRotsMasks &initRotsMasks,
                      CryptoOpsLogger &cryptoOpsLogger,
@@ -28,6 +31,7 @@ std::vector<std::vector<std::vector<Ciphertext<DCRTPoly>>>> // Element-wise-encr
 std::vector<std::vector<Ciphertext<DCRTPoly>>> 
         evalMatSqMul(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElems, 
                      int exponent,
+                     int packingMode, // 0: row/col | 1: full matrix
                      CryptoContext<DCRTPoly> &cryptoContext,
                      InitRotsMasks &initRotsMasks,
                      CryptoOpsLogger &cryptoOpsLogger,

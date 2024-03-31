@@ -36,13 +36,33 @@ InitRotsMasks::InitRotsMasks(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCR
     slots(slots) {
     std::vector<int32_t> rotIndices;
     int k_ceil = std::ceil(std::log2(slots));
-    int slots_padded = std::pow(2,k_ceil);
+    int slotsPadded = std::pow(2,k_ceil);
     // (1a) Generate rotation keys for +/-[slots] number of steps.
     for (size_t i = 0; i <= slots; i++) { rotIndices.push_back(-i); rotIndices.push_back(i);}
     // (1b) Generate rotation keys for prefix addition/multiplication.
-    for (size_t i = 0; i <= k_ceil; i++) { rotIndices.push_back(std::pow(2,i)); }
+    for (size_t k = 0; k <= k_ceil; k++) { rotIndices.push_back(std::pow(2,k)); }
     // (1c) Generate rotation keys for matrix packing.
-    for (size_t i = 0; i <= slots*slots; i++) { rotIndices.push_back(i*slots_padded); }
+    for (size_t row = 0; row < slots; row++){
+        for (size_t col = 0; col < slots; col++){
+            rotIndices.push_back(-(row*slotsPadded*slotsPadded+col));
+        }
+    }
+    for (size_t col = 0; col < slots; col++){
+        for (size_t row = 0; row < slots; row++){
+            rotIndices.push_back(-(col*slotsPadded+row));
+        }
+    }
+    for (size_t k = 0; k <= k_ceil; k++) {
+        rotIndices.push_back(-std::pow(2,k)*slotsPadded);
+        rotIndices.push_back(-std::pow(2,k)*slotsPadded*slotsPadded);
+    }
+    // (1d) Generate rotation keys for matrix element extraction.
+    for (size_t row = 0; row < slots; row++){
+        for (size_t col = 0; col < slots; col++){
+            rotIndices.push_back(row*slotsPadded*slotsPadded+col*slotsPadded);
+        }
+    }
+    // Generate rotation keys for all rotation indices.
     cryptoContext->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
     // (2)Generate Eval Sum Key for EvalInnerProduct.
     cryptoContext->EvalSumKeyGen(keyPair.secretKey);
@@ -53,15 +73,28 @@ InitRotsMasks::InitRotsMasks(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCR
                                                     cryptoContext->MakePackedPlaintext(mask)));
     }
     // (3b) Generate ciphertext masks for extraction of slot values in fully packed ciphertexts.
-    for (size_t elem=0 ; elem < slots*slots ; ++elem){ 
-        std::vector<int64_t> mask(slots*slots*slots_padded,0); mask[elem*slots_padded] = 1;
-        encMasksFullyPacked_.push_back(cryptoContext->Encrypt(keyPair.publicKey,
-                                                              cryptoContext->MakePackedPlaintext(mask)));
+    for (size_t row = 0; row < slots; row++){
+        for (size_t col = 0; col < slots; col++){
+            std::vector<int64_t> mask(slots*slotsPadded*slotsPadded,0); 
+            mask[row*slotsPadded*slotsPadded+col*slotsPadded] = 1;
+            // rotIndices.push_back(row*slotsPadded*slotsPadded+col*slotsPadded);
+            encMasksFullyPacked_.push_back(cryptoContext->Encrypt(keyPair.publicKey,
+                                                                  cryptoContext->MakePackedPlaintext(mask)));
+        }
     }
+    // for (size_t elem=0 ; elem < slots*slots ; ++elem){ 
+    //     std::vector<int64_t> mask(slots*slotsPadded*slotsPadded,0); mask[elem*slotsPadded] = 1;
+    //     encMasksFullyPacked_.push_back(cryptoContext->Encrypt(keyPair.publicKey,
+    //                                                           cryptoContext->MakePackedPlaintext(mask)));
+    // }
+    // (4) Encrypt constant (zeroes) for fully packed matrix ciphertext.
+    std::vector<int64_t> packedZeroes(slots*slots*slotsPadded,0);
+    encZeroes_ = cryptoContext->Encrypt(keyPair.publicKey,cryptoContext->MakePackedPlaintext(packedZeroes));
 }
 
 std::vector<Ciphertext<DCRTPoly>> InitRotsMasks::encMasks() { return encMasks_; }
 std::vector<Ciphertext<DCRTPoly>> InitRotsMasks::encMasksFullyPacked() { return encMasksFullyPacked_; }
+Ciphertext<DCRTPoly> InitRotsMasks::encZeroes() { return encZeroes_; }
 
 
 Ciphertext<DCRTPoly> evalExponentiate(Ciphertext<DCRTPoly> &ciphertext, int exponent, 

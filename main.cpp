@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
     parameters.SetPlaintextModulus(chosen_ptxtmodulus);
     // p = 65537, depth = 13 -> "Please provide a q and a m satisfying: (q-1)/m is an integer. The values of primeModulus = 65537 and m = 131072 do not."
     // Fermats thm works for p = 786433, dep = 20.
-    int chosen_depth = 11;
+    int chosen_depth = 10;
     parameters.SetMultiplicativeDepth(chosen_depth);
     parameters.SetMaxRelinSkDeg(3);
 
@@ -238,6 +238,7 @@ int main(int argc, char* argv[]) {
     // int k_ceil = std::ceil(std::log2(dimMat));
     // int slotsPadded =std::pow(2, k_ceil);
 
+    // // Fully pack both matrices into individual ciphertexts.
     // std::vector<int64_t> packedRows;
     // std::vector<int64_t> packedCols;
     // for (int row = 0; row < dimMat; row++){
@@ -254,6 +255,8 @@ int main(int argc, char* argv[]) {
     // }
     // auto testEncMat1 = cryptoContext->Encrypt(keyPair.publicKey,cryptoContext->MakePackedPlaintext(packedRows));
     // auto testEncMat2 = cryptoContext->Encrypt(keyPair.publicKey,cryptoContext->MakePackedPlaintext(packedCols));
+
+    // // Matrix multiplication; single inner product.
     // auto encResMult= cryptoContext->EvalMult(testEncMat1, testEncMat2);
     // auto encResInnerProd = evalPrefixAdd(encResMult,slotsPadded,cryptoContext);
 
@@ -304,7 +307,7 @@ int main(int argc, char* argv[]) {
     // return 0;
 
     //==========================================================
-    // Runtime test for single multiplication.
+    // Runtime test for single operations.
     //==========================================================
 
     // auto res = encOnes;
@@ -315,7 +318,19 @@ int main(int argc, char* argv[]) {
     //     processingTime = TOC(t);
     //     std::cout << "Multiplication & mod reduction: " << processingTime << "ms" << std::endl;
     // }
-
+    // res = encOnes;
+    // for (int i = 0; i<chosen_depth; ++i){
+    //     TIC(t);
+    //     res = cryptoContext->EvalAdd(res,res);
+    //     processingTime = TOC(t);
+    //     std::cout << "Addition: " << processingTime << "ms" << std::endl;
+    // }
+    // for (int i = 0; i<n; ++i){
+    //     TIC(t);
+    //     res = cryptoContext->EvalRotate(res,i);
+    //     processingTime = TOC(t);
+    //     std::cout << "Rotation: " << processingTime << "ms" << std::endl;
+    // }
     // return 0;
 
     //==========================================================
@@ -342,7 +357,7 @@ int main(int argc, char* argv[]) {
     // Plaintext testPlaintext;
     // cryptoContext->Decrypt(keyPair.secretKey, resTest, &testPlaintext); 
     // testPlaintext->SetLength(slots); auto testPayload = testPlaintext->GetPackedValue();
-    // std::cout << testPayload << std::endl;
+    // std::cout << testPayload[slots-1] << std::endl;
 
     // return 0;
 
@@ -416,10 +431,9 @@ int main(int argc, char* argv[]) {
         // Matrix exponentiation.
         // Begin: Timer.
         TIC(t);
-
         // auto encMatrixExp = evalMatrixExp(encRowsAdjMatrix,n,cryptoContext,initRotsMasks,cryptoOpsLogger); 
-        // auto encMatrixExpElems = evalMatSqMul(encRowsAdjMatrix,n,cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair); // TODO: keypair param for debugging
-        auto encMatrixExpElems = evalMatSqMul(encAdjMatrixElems,n,cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair); 
+        // 3rd param: Row/Col matrix packing (mode 1),  Full matrix packing (mode 1) 
+        auto encMatrixExpElems = evalMatSqMul(encAdjMatrixElems,n,1,cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair); // TODO: keypair param for debugging
         auto encMatrixExp = encElem2Rows(encMatrixExpElems,cryptoContext,initRotsMasks,cryptoOpsLogger);
 
         // End: Timer.
@@ -485,7 +499,9 @@ int main(int argc, char* argv[]) {
         
         // Print availability vector.
         std::cout << "Availability vector: "; printEnc(encUserAvailability,n,cryptoContext,keyPair); 
-        std::cout << std::endl;
+
+        // Print output vector.
+        std::cout << "Output vector: "; printEnc(enc_output,n,cryptoContext,keyPair); 
 
         // Refresh ciphertexts.
         refreshInPlace(encUserAvailability,n,keyPair, cryptoContext);
