@@ -432,16 +432,15 @@ int main(int argc, char* argv[]) {
         // Begin: Timer.
         TIC(t);
         // auto encMatrixExp = evalMatrixExp(encRowsAdjMatrix,n,cryptoContext,initRotsMasks,cryptoOpsLogger); 
-        // 3rd param: Row/Col matrix packing (mode 1),  Full matrix packing (mode 1) 
-        auto encMatrixExpElems = evalMatSqMul(encAdjMatrixElems,n,1,cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair); // TODO: keypair param for debugging
+        // 3rd param: No packing (mode 0), Row/Col matrix packing (mode 1), Full matrix packing (mode 2) 
+        auto encMatrixExpElems = evalMatSqMul(encAdjMatrixElems,n,
+                                              2, // Packing mode.
+                                              cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair); // TODO: keypair param for debugging
         auto encMatrixExp = encElem2Rows(encMatrixExpElems,cryptoContext,initRotsMasks,cryptoOpsLogger);
 
         // End: Timer.
         processingTime = TOC(t);
         std::cout << "Online part 2a - Matrix exponentiation: " << processingTime << " ms" << std::endl;
-        // std::cout << "Total homomorphic computation time: " << cryptoOpsLogger.totalTime() << " ms" << std::endl;
-        // std::cout << "Total homomorphic multiplications: " << cryptoOpsLogger.multOps()+cryptoOpsLogger.innerProdOps() << std::endl;
-        // std::cout << "Total homomorphic multiplication time: " << cryptoOpsLogger.multTime()+cryptoOpsLogger.innerProdTime() << " ms" << std::endl;
 
         // Refresh ciphertexts.
         for (int row=0; row < n; ++row){ refreshInPlace(encMatrixExp[row],n,keyPair,cryptoContext); } 
@@ -456,12 +455,8 @@ int main(int argc, char* argv[]) {
         processingTime = TOC(t);  
         std::cout << "Online part 2b - Cycle computation: " << processingTime << "ms" << std::endl;
 
-
-
         // Refresh ciphertexts.
         refreshInPlace(enc_u,n,keyPair, cryptoContext);
-
-
 
         //----------------------------------------------------------
         // (3) Update user availability and outputs.

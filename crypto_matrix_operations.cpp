@@ -23,9 +23,25 @@ std::vector<std::vector<Ciphertext<DCRTPoly>>> // Element-wise-encrypted output 
 
     // If 2 matrices, multiply.
     if (numMats == 2) {
-
-        // PACKING MODE 0 (ROW/COL)
+        // PACKING MODE 0 (ELEMS)
         if (packingMode == 0) {
+            std::vector<std::vector<Ciphertext<DCRTPoly>>> encMatElemContainer;
+            for (size_t row=0 ; row < n ; ++row){ 
+                std::vector<Ciphertext<DCRTPoly>> encMatElemRow;
+                for (size_t col=0 ; col < n ; ++col){ 
+                    std::vector<Ciphertext<DCRTPoly>> encToAddContainer;
+                    for (size_t i=0 ; i < n ; ++i){
+                        encToAddContainer.push_back(cryptoContext->EvalMult(encMatsElems[0][row][i], 
+                                                                            encMatsElems[1][i][col]));
+                    }
+                    encMatElemRow.push_back(cryptoContext->EvalAddMany(encToAddContainer));
+                }   
+                encMatElemContainer.push_back(encMatElemRow);
+            }
+            return encMatElemContainer;
+        }
+        // PACKING MODE 1 (ROW/COL)
+        else if (packingMode == 1) {
             // TODO: Assert sufficient slots.
             // Convert to row- and col-wise matrix encryptions.
             auto leftEncMat = encElem2Rows(encMatsElems[0],cryptoContext,initRotsMasks,cryptoOpsLogger);
@@ -52,7 +68,7 @@ std::vector<std::vector<Ciphertext<DCRTPoly>>> // Element-wise-encrypted output 
         }
         // TODO: PACKING MODE 1 (FULL MATRIX)
         else {
-            assert(packingMode == 1);
+            assert(packingMode == 2);
             // Assert sufficient slots.
             // Dimension of matrix: n
             int k_ceil = std::ceil(std::log2(n));
