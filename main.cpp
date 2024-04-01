@@ -444,6 +444,7 @@ int main(int argc, char* argv[]) {
 
         // Refresh ciphertexts.
         for (int row=0; row < n; ++row){ refreshInPlace(encMatrixExp[row],n,keyPair,cryptoContext); } 
+        printEncMatRows(encMatrixExp,cryptoContext,keyPair);
 
         // Extract computed cycles.
         // Begin: Timer.

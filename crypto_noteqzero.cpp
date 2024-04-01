@@ -37,14 +37,15 @@ Ciphertext<DCRTPoly> evalNotEqualZero(Ciphertext<DCRTPoly> &ciphertext,
                                   CryptoContext<DCRTPoly> &cryptoContext,
                                   InitNotEqualZero &initNotEqualZero) {
     // If x is in range, outputs 1. 
-    // 1-(x-1)(x-2)...(x-r)/r!
+    // 1-(x-1)(x-2)...(x-r)/r! 
     std::vector<Ciphertext<DCRTPoly>> encDiffs;
     for (size_t i=0 ; i < initNotEqualZero.range ; ++i){ 
         encDiffs.push_back(cryptoContext->EvalAdd(ciphertext, initNotEqualZero.encNegRange()[i]));
     }
     encDiffs.push_back(initNotEqualZero.encInvFactorial());
-    encDiffs.push_back(initNotEqualZero.encNegOne());
+    if (initNotEqualZero.range % 2 - 1) { encDiffs.push_back(initNotEqualZero.encNegOne()); }
     auto encMult = cryptoContext->EvalMultMany(encDiffs);
+    // TODO: handle even/odd range.
     // if (initNotEqualZero.range % 2) { return cryptoContext->EvalAdd(initNotEqualZero.encOne(),encMult); } 
     // else { return cryptoContext->EvalAdd(initNotEqualZero.encNegRange()[0],encMult); }
     return cryptoContext->EvalAdd(initNotEqualZero.encOne(),encMult);
