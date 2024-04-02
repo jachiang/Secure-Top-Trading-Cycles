@@ -154,22 +154,46 @@ int main(int argc, char* argv[]) {
     auto n = userInputs.size();
 
     // Offline: User preference as a permutation matrix.
-    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefList;
-    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefTransposedList;
+    // Translate user preference into permutation matrices
+    // and generate row-wise encryptions of each user matrix (packing mode 1),
+    // or a single encryption of all rows of all user matrices (packing mode 2).
+
+    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefList;             // Packing mode: 1 (row/col-wise packing of each matrices)
+    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefTransposedList;   // Packing mode: 1 (row/col-wise packing of each matrices)
+    std::vector<int64_t> userPrefFullyPacked;                                   // Packing mode: 2 (full packing of user all matrices)
+    std::vector<int64_t> userPrefTransposedFullyPacked;                         // Packing mode: 2 (full packing of user all matrices)
+    
+    int k_ceil = std::ceil(std::log2(n));
+    int slotsPadded = std::pow(2,k_ceil);
+
     for (int user=0; user < n; ++user) { 
+        // Derive user preference-permutation matrix.
         std::vector<std::vector<int64_t>> userPrefMatrix;
-        for (int j=0; j < n; ++j) {
-            std::vector<int64_t> row(n,0); row[userInputs[user][j]] = 1;
+        for (int col=0; col < n; ++col) {
+            // For packing mode 1: row-vector of user permutation matrix.
+            std::vector<int64_t> row(n,0); row[userInputs[user][col]] = 1;
             userPrefMatrix.push_back(row);
+             // For packing mode 2: vector with all transposed user permutation matrices.
+            for (auto elem: row) { userPrefFullyPacked.push_back(elem);}
+            for (int i=0; i<slotsPadded-n; ++i){ userPrefFullyPacked.push_back(0); } 
         }   
         // Transpose user preference-permutation matrix.
         std::vector<std::vector<int64_t>> userPrefMatrixTransposed;
         std::vector<int64_t> zeroRow(n,0);
-        for (int j=0; j < n; ++j) { userPrefMatrixTransposed.push_back(zeroRow); }
-        for (int j=0; j < n; ++j) { for (int k=0; k < n; ++k) {
-            if (userPrefMatrix[j][k] == 1) { userPrefMatrixTransposed[k][j] = 1; break; }
+        // For packing mode 1: row-vector of transposed user permutation matrix.
+        for (int row=0; row < n; ++row) { userPrefMatrixTransposed.push_back(zeroRow); }
+        for (int row=0; row < n; ++row) { for (int col=0; col < n; ++col) {
+            // if (userPrefMatrix[row][col] == 1) { userPrefMatrixTransposed[col][row] = 1; break; }
+            userPrefMatrixTransposed[col][row] = userPrefMatrix[row][col];
         }}
-        // Encrypt user preference and transposed preference permutation matrix.
+        // For packing mode 2: vector with all transposed user permutation matrices.
+        for (int row=0; row < n; ++row) { 
+            for (int col=0; col < n; ++col) {
+                userPrefTransposedFullyPacked.push_back(userPrefMatrixTransposed[row][col]);
+            }
+            for (int i=0; i<slotsPadded-n; ++i){ userPrefTransposedFullyPacked.push_back(0); }
+        }    
+        // For packing mode 1: row-wise encryption of each permutation matrix.
         std::vector<Ciphertext<DCRTPoly>> encUserPref;
         std::vector<Ciphertext<DCRTPoly>> encUserPrefTransposed;
         for (int j=0; j<n ; ++j){ 
@@ -179,12 +203,19 @@ int main(int argc, char* argv[]) {
                                             cryptoContext->MakePackedPlaintext(userPrefMatrixTransposed[j])));
         }
         encUserPrefList.push_back(encUserPref);
-        encUserPrefTransposedList.push_back(encUserPrefTransposed);
+        encUserPrefTransposedList.push_back(encUserPrefTransposed);        
     }
+    // For packing mode 2: encryption of all permutation matrices in one ciphertext.
+    auto encUserPrefFullyPacked = cryptoContext->Encrypt(keyPair.publicKey,
+                                  cryptoContext->MakePackedPlaintext(userPrefFullyPacked));
+    auto encUserPrefTransposedFullyPacked = cryptoContext->Encrypt(keyPair.publicKey,
+                                            cryptoContext->MakePackedPlaintext(userPrefTransposedFullyPacked));
+
 
     // Server Offline: Precompute encryptions of constants, initialize rotation keys.
     InitRotsMasks initRotsMasks(cryptoContext,keyPair,n);
-    InitNotEqualZero initNotEqualZero(cryptoContext, keyPair, userInputs.size(), userInputs.size()); // (..., slots, range)
+    InitNotEqualZero initNotEqualZero(cryptoContext,keyPair,cryptoContext->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder()/2,
+                                                            userInputs.size()); // (..., slots, range)
     InitPreserveLeadOne initPreserveLeadOne(cryptoContext,keyPair,n);
     
     // Server Offline: Initialize enc(user-availability), enc(ones), enc([0:n])
@@ -415,7 +446,10 @@ int main(int argc, char* argv[]) {
         }
         else {
             assert(packingModeStep1 == 2);
-            // TODO: Availability matrix * Preference Matrices
+            // TODO: Availability matrix * Preference Matrices (row_11 | ... | row_1n) | (row_21 | ... | row_2n)
+            // padded(available) | padded(available)| ... (nxn repetitions)
+            // padded(row1)      | padded(row2)     | padded(row3)
+
             // TODO: EvalPreserveLeadOne over padded(preferredAvailable1) | padded(preferredAvailable2) | ...
             // TODO: PreferredAvailable matrix * Preference Matrices
         }
@@ -443,38 +477,75 @@ int main(int argc, char* argv[]) {
         // (2) Matrix exponentiation for cycle finding.
         //----------------------------------------------------------
 
+       // 0: No packing 
+        // 1: Row/Col matrix packing
+        // 2: Full matrix packing
+        int packingModeStep2 = 1;
+
         // Matrix exponentiation.
         // Begin: Timer.
         TIC(t);
-        // No packing (mode 0), Row/Col matrix packing (mode 1), Full matrix packing (mode 2) 
-        auto encMatrixExpElems = evalMatSqMul(encAdjMatrixElems,n,
-                                              2, // Packing mode.
-                                              cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair); // TODO: keypair param for debugging
-        // End: Timer.
-        processingTime = TOC(t);
-        std::cout << "Online part 2a - Matrix exponentiation: " << processingTime << " ms" << std::endl;
-       
-        auto encMatrixExp = encElem2Rows(encMatrixExpElems,cryptoContext,initRotsMasks,cryptoOpsLogger);
 
+        // Cycle finding result [res_1, ..., res_n]; 
+        // On cycle: res_i = 1. Not on cycle: res_i = 0.
+        Ciphertext<DCRTPoly> enc_u; 
 
-        // Refresh ciphertexts.
-        for (int row=0; row < n; ++row){ refreshInPlace(encMatrixExp[row],n,keyPair,cryptoContext); } 
-        printEncMatRows(encMatrixExp,cryptoContext,keyPair);
+        if (packingModeStep2 == 0){
+            // TODO: ...
+        }
+        else if (packingModeStep2 == 1){
+            // No packing (mode 0), Row/Col matrix packing (mode 1), Full matrix packing (mode 2) 
+            auto encMatrixExpElems = evalMatSqMul(encAdjMatrixElems,n,
+                                                1, // Packing mode.
+                                                cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair); // TODO: keypair param for debugging
+            // End: Timer.
+            processingTime = TOC(t);
+            std::cout << "Online part 2a - Matrix exponentiation: " << processingTime << " ms" << std::endl;
 
-        // Extract computed cycles.
-        // Begin: Timer.
-        TIC(t);
-        // No packing (mode 0), Row/Col matrix packing (mode 1), Full matrix packing (mode 2) 
-        // TODO: move encOnes to initRotsMasks
-        // TODO: over packed ciphertexts.
-        auto enc_u = evalVecMatrixMult(encOnes,encMatrixExp,cryptoContext,initRotsMasks,cryptoOpsLogger); 
-        enc_u = evalNotEqualZero(enc_u,cryptoContext,initNotEqualZero); 
-        // End: Timer.
-        processingTime = TOC(t);  
-        std::cout << "Online part 2b - Cycle computation: " << processingTime << "ms" << std::endl;
+            // TODO: perform this transform in refresh.
+            auto encMatrixExp = encElem2Cols(encMatrixExpElems,cryptoContext,initRotsMasks,cryptoOpsLogger);
 
-        // Refresh ciphertexts.
-        refreshInPlace(enc_u,n,keyPair, cryptoContext);
+            // Refresh ciphertexts.
+            for (int col=0; col < n; ++col){ refreshInPlace(encMatrixExp[col],n,keyPair,cryptoContext); } 
+            printEncMatRows(encMatrixExp,cryptoContext,keyPair);
+
+            // Extract computed cycles.
+            // Begin: Timer.
+            TIC(t);
+            enc_u = evalVecMatrixMult(encOnes,encMatrixExp,cryptoContext,initRotsMasks,cryptoOpsLogger); 
+            enc_u = evalNotEqualZero(enc_u,cryptoContext,initNotEqualZero); 
+            // End: Timer.
+            processingTime = TOC(t);  
+            std::cout << "Online part 2b - Cycle computation: " << processingTime << "ms" << std::endl;
+
+            // Refresh ciphertexts.
+            refreshInPlace(enc_u,n,keyPair, cryptoContext);
+        }
+        else {
+            assert(packingModeStep2 == 2);
+            auto encMatrixExpElems = evalMatSqMul(encAdjMatrixElems,n,
+                                                2, // Packing mode.
+                                                cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair); // TODO: keypair param for debugging, remove later.
+            // TODO: refresh ciphertexts
+            std::vector<int64_t> packedMatrix;
+            for (int row = 0; row < n; row++){
+                for (int col = 0; col < n; col++){
+                    // payload<-decrypt mat[row][col]
+                    // packedMatrix.push_back(payload);
+                }
+            }
+                // TODO: Pack exp-matrix
+                // packed(col1) | packed(col2) | packed(col3) ...     
+                // packed(ones) | packed(ones) | packed(ones) ...
+
+            // Extract computed cycles.
+                // TODO: ones-vector x exp-matrix 
+                // TODO: EvalNotEqualZero (SIMD)
+                // TODO: Extract individual elements.
+                
+            // Refresh and encrypt packed
+                // TODO: fresh encryption of [ u_1 | u_2 | ... | u_n ]
+        }           
 
         //----------------------------------------------------------
         // (3) Update user availability and outputs.
@@ -527,7 +598,7 @@ int main(int argc, char* argv[]) {
         }
         else {
             assert(packingModeStep1 == 2);
-            // TODO: refresh and produce fully packed ciphertexts of availability and output vector.
+            // TODO: assume refreshed availability and output vectors.
             // padded(availabilityVector) | padded(availabilityVector) | ... (n x n times, each padding up to next 2^k)
         }
     // End loop.

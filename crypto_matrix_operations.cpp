@@ -291,7 +291,7 @@ Ciphertext<DCRTPoly> evalMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &encRow
 
 
 Ciphertext<DCRTPoly> evalVecMatrixMult(Ciphertext<DCRTPoly> &enc_vec,
-                                       std::vector<Ciphertext<DCRTPoly>> &encRows, 
+                                       std::vector<Ciphertext<DCRTPoly>> &encCols, 
                                     //    KeyPair<DCRTPoly> keyPair, // TODO: Only public key required for row to col encryption.
                                        CryptoContext<DCRTPoly> &cryptoContext,            
                                     //    InitMatrixVecMult &initMatrixVecMult,
@@ -299,14 +299,14 @@ Ciphertext<DCRTPoly> evalVecMatrixMult(Ciphertext<DCRTPoly> &enc_vec,
                                        CryptoOpsLogger &cryptoOpsLogger) {
     // TODO: assert slots in initMatrixVecMult consistent with inputs.
     std::vector<Ciphertext<DCRTPoly>> enc_elements;
-    for (size_t row=0 ; row < encRows.size() ; ++row){ 
+    for (size_t col=0 ; col < encCols.size() ; ++col){ 
         // Require col encryptions of matrix.
-        auto encCols = rowToColEnc(encRows,cryptoContext, initRotsMasks,cryptoOpsLogger); 
-        auto enc_element = cryptoContext->EvalInnerProduct(encCols[row], enc_vec, 
+        // auto encCols = rowToColEnc(encRows,cryptoContext, initRotsMasks,cryptoOpsLogger); 
+        auto enc_element = cryptoContext->EvalInnerProduct(encCols[col], enc_vec, 
                                                            encCols.size());
         auto enc_element_masked = cryptoContext->EvalMult(enc_element, initRotsMasks.encMasks()[0]);         
         cryptoContext->ModReduceInPlace(enc_element_masked);
-        enc_element = cryptoContext->EvalRotate(enc_element_masked,-row);
+        enc_element = cryptoContext->EvalRotate(enc_element_masked,-col);
         enc_elements.push_back(enc_element);
     }
     return cryptoContext->EvalAddMany(enc_elements);
