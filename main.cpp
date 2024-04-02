@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
     parameters.SetPlaintextModulus(chosen_ptxtmodulus);
     // p = 65537, depth = 13 -> "Please provide a q and a m satisfying: (q-1)/m is an integer. The values of primeModulus = 65537 and m = 131072 do not."
     // Fermats thm works for p = 786433, dep = 20.
-    int chosen_depth = 10;
+    int chosen_depth = 9;
     parameters.SetMultiplicativeDepth(chosen_depth);
     parameters.SetMaxRelinSkDeg(3);
 
@@ -193,7 +193,7 @@ int main(int argc, char* argv[]) {
     std::vector<int64_t> negOnes(n,cryptoContext->GetCryptoParameters()->GetPlaintextModulus()-1);
     std::vector<int64_t> range; for (int i=0; i<n; ++i) { range.push_back(i+1); } // 1, 2, ..., n
     auto encOnes = cryptoContext->Encrypt(keyPair.publicKey,
-                                                      cryptoContext->MakePackedPlaintext(ones));
+                                          cryptoContext->MakePackedPlaintext(ones));
     auto encZeros = cryptoContext->Encrypt(keyPair.publicKey,
                                            cryptoContext->MakePackedPlaintext(zeros));
     auto encNegOnes = cryptoContext->Encrypt(keyPair.publicKey,
@@ -312,11 +312,14 @@ int main(int argc, char* argv[]) {
 
     // auto res = encOnes;
     // for (int i = 0; i<chosen_depth; ++i){
-    //     TIC(t);
-    //     res = cryptoContext->EvalMult(res,res);
+    //     TIC(t); res = cryptoContext->EvalRotate(res,std::pow(2,3));
+    //     processingTime = TOC(t);
+    //     std::cout << "Rotation: " << processingTime << "ms" << std::endl;
+    //     TIC(t); res = cryptoContext->EvalMult(res,res);
     //     cryptoContext->ModReduceInPlace(res);
     //     processingTime = TOC(t);
-    //     std::cout << "Multiplication & mod reduction: " << processingTime << "ms" << std::endl;
+    //     std::cout << "Multiplication + mod reduction: " << processingTime << "ms" << std::endl;
+
     // }
     // res = encOnes;
     // for (int i = 0; i<chosen_depth; ++i){
@@ -386,23 +389,35 @@ int main(int argc, char* argv[]) {
         // (1) Update adjacency matix.
         //----------------------------------------------------------
 
-
         std::vector<Ciphertext<DCRTPoly>> encRowsAdjMatrix;
+
+        // 0: No packing 
+        // 1: Row/Col matrix packing
+        // 2: Full matrix packing
+        int packingModeStep1 = 1;
 
         // Begin: Timer.
         TIC(t);
 
-        // Generate adjacency matrix for all users.
-        for (int user = 0; user < n; ++user){
-            // Sort availability according to user preference.
-            auto encUserAvailablePref = evalMatrixVecMult(encUserPrefList[user], encUserAvailability,
-                                                          cryptoContext, initRotsMasks); // 2 mult-depth
-            // Preserve highest, available preference.
-            auto encUserFirstAvailablePref = evalPreserveLeadOne(encUserAvailablePref, cryptoContext, initPreserveLeadOne); // 2+log(n) mult-depth
-
-            // Transpose back to obtain adjacency matrix row.
-            encRowsAdjMatrix.push_back(evalMatrixVecMult(encUserPrefTransposedList[user], encUserFirstAvailablePref,
-                                                         cryptoContext, initRotsMasks)); // 2 mult-depth
+        if (packingModeStep1 == 0){
+             // TODO: 
+        }
+        else if (packingModeStep1 == 1){
+            // Generate adjacency matrix for all users.
+            // TODO: This step runs over row/col-wise packed ciphertexts.
+            for (int user = 0; user < n; ++user){
+                auto encUserAvailablePref = evalMatrixVecMult(encUserPrefList[user], encUserAvailability,
+                                                              cryptoContext, initRotsMasks); // 2 mult-depth
+                auto encUserFirstAvailablePref = evalPreserveLeadOne(encUserAvailablePref, cryptoContext, initPreserveLeadOne); // 2+log(n) mult-depth
+                encRowsAdjMatrix.push_back(evalMatrixVecMult(encUserPrefTransposedList[user], encUserFirstAvailablePref,
+                                                             cryptoContext, initRotsMasks)); // 2 mult-depth
+            }
+        }
+        else {
+            assert(packingModeStep1 == 2);
+            // TODO: Availability matrix * Preference Matrices
+            // TODO: EvalPreserveLeadOne over padded(preferredAvailable1) | padded(preferredAvailable2) | ...
+            // TODO: PreferredAvailable matrix * Preference Matrices
         }
 
         std::cout << "Adjacency Matrix: " << std::endl;
@@ -431,16 +446,16 @@ int main(int argc, char* argv[]) {
         // Matrix exponentiation.
         // Begin: Timer.
         TIC(t);
-        // auto encMatrixExp = evalMatrixExp(encRowsAdjMatrix,n,cryptoContext,initRotsMasks,cryptoOpsLogger); 
-        // 3rd param: No packing (mode 0), Row/Col matrix packing (mode 1), Full matrix packing (mode 2) 
+        // No packing (mode 0), Row/Col matrix packing (mode 1), Full matrix packing (mode 2) 
         auto encMatrixExpElems = evalMatSqMul(encAdjMatrixElems,n,
                                               2, // Packing mode.
                                               cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair); // TODO: keypair param for debugging
-        auto encMatrixExp = encElem2Rows(encMatrixExpElems,cryptoContext,initRotsMasks,cryptoOpsLogger);
-
         // End: Timer.
         processingTime = TOC(t);
         std::cout << "Online part 2a - Matrix exponentiation: " << processingTime << " ms" << std::endl;
+       
+        auto encMatrixExp = encElem2Rows(encMatrixExpElems,cryptoContext,initRotsMasks,cryptoOpsLogger);
+
 
         // Refresh ciphertexts.
         for (int row=0; row < n; ++row){ refreshInPlace(encMatrixExp[row],n,keyPair,cryptoContext); } 
@@ -449,8 +464,10 @@ int main(int argc, char* argv[]) {
         // Extract computed cycles.
         // Begin: Timer.
         TIC(t);
-        auto enc_u = evalVecMatrixMult(encOnes,encMatrixExp,cryptoContext,initRotsMasks,cryptoOpsLogger); // TODO: only publickey required, create dedicated init class.
-
+        // No packing (mode 0), Row/Col matrix packing (mode 1), Full matrix packing (mode 2) 
+        // TODO: move encOnes to initRotsMasks
+        // TODO: over packed ciphertexts.
+        auto enc_u = evalVecMatrixMult(encOnes,encMatrixExp,cryptoContext,initRotsMasks,cryptoOpsLogger); 
         enc_u = evalNotEqualZero(enc_u,cryptoContext,initNotEqualZero); 
         // End: Timer.
         processingTime = TOC(t);  
@@ -500,10 +517,19 @@ int main(int argc, char* argv[]) {
         std::cout << "Output vector: "; printEnc(enc_output,n,cryptoContext,keyPair); 
 
         // Refresh ciphertexts.
-        refreshInPlace(encUserAvailability,n,keyPair, cryptoContext);
-        refreshInPlace(enc_output,n,keyPair, cryptoContext);
-
-
+        // TODO: During refresh, produce (0) elem-wise, (1) row/col-wise or (2) matrix-wise packed ciphertext.
+        if (packingModeStep1 == 0){
+            // TODO: refresh individually encrypted ciphertexts.
+        }
+        else if (packingModeStep1 == 1){
+            refreshInPlace(encUserAvailability,n,keyPair, cryptoContext);
+            refreshInPlace(enc_output,n,keyPair, cryptoContext);
+        }
+        else {
+            assert(packingModeStep1 == 2);
+            // TODO: refresh and produce fully packed ciphertexts of availability and output vector.
+            // padded(availabilityVector) | padded(availabilityVector) | ... (n x n times, each padding up to next 2^k)
+        }
     // End loop.
     }
 

@@ -82,11 +82,6 @@ InitRotsMasks::InitRotsMasks(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCR
                                                                   cryptoContext->MakePackedPlaintext(mask)));
         }
     }
-    // for (size_t elem=0 ; elem < slots*slots ; ++elem){ 
-    //     std::vector<int64_t> mask(slots*slotsPadded*slotsPadded,0); mask[elem*slotsPadded] = 1;
-    //     encMasksFullyPacked_.push_back(cryptoContext->Encrypt(keyPair.publicKey,
-    //                                                           cryptoContext->MakePackedPlaintext(mask)));
-    // }
     // (4) Encrypt constant (zeroes) for fully packed matrix ciphertext.
     std::vector<int64_t> packedZeroes(slots*slots*slotsPadded,0);
     encZeroes_ = cryptoContext->Encrypt(keyPair.publicKey,cryptoContext->MakePackedPlaintext(packedZeroes));

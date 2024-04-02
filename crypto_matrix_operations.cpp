@@ -52,12 +52,12 @@ std::vector<std::vector<Ciphertext<DCRTPoly>>> // Element-wise-encrypted output 
             for (size_t row=0 ; row < n ; ++row){ 
                 std::vector<Ciphertext<DCRTPoly>> encMatElemRow;
                 for (size_t col=0 ; col < n ; ++col){ 
+                    TimeVar t;
                     // Compute & log InnerProduct over ciphertexts.
-                    TimeVar t; TIC(t);
-                    auto encElem = cryptoContext->EvalInnerProduct(leftEncMat[row], rightEncMat[col], n);
-                    cryptoOpsLogger.logInnerProd(TOC(t)); TIC(t);
+                    TIC(t); auto encElem = cryptoContext->EvalInnerProduct(leftEncMat[row], rightEncMat[col], n);
+                    cryptoOpsLogger.logInnerProd(TOC(t));
                     // Compute & log Multiplication over ciphertexts.
-                    auto encElemMasked = cryptoContext->EvalMult(encElem, initRotsMasks.encMasks()[0]);         
+                    TIC(t); auto encElemMasked = cryptoContext->EvalMult(encElem, initRotsMasks.encMasks()[0]);         
                     cryptoContext->ModReduceInPlace(encElemMasked);
                     cryptoOpsLogger.logMult(TOC(t));
                     encMatElemRow.push_back(encElemMasked);
@@ -66,7 +66,7 @@ std::vector<std::vector<Ciphertext<DCRTPoly>>> // Element-wise-encrypted output 
             }
             return encMatElemContainer;
         }
-        // TODO: PACKING MODE 1 (FULL MATRIX)
+        // TODO: PACKING MODE 2 (FULL MATRIX)
         else {
             assert(packingMode == 2);
             // Assert sufficient slots.
