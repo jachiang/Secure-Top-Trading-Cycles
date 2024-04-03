@@ -185,18 +185,16 @@ int main(int argc, char* argv[]) {
         // For packing mode 1: buid row-vector of transposed user permutation matrix.
         for (int row=0; row < n; ++row) { userPrefMatrixTransposed.push_back(zeroRow); }
         for (int row=0; row < n; ++row) { for (int col=0; col < n; ++col) {
-            // if (userPrefMatrix[row][col] == 1) { userPrefMatrixTransposed[col][row] = 1; break; }
             userPrefMatrixTransposed[col][row] = userPrefMatrix[row][col];
         }}
         // For packing mode 2: build single vector representation of all user transposed permutation matrices.
-        for (int row=0; row < n; ++row) { 
-            for (int col=0; col < n; ++col) {
+        for (int row=0; row < n; ++row) { for (int col=0; col < n; ++col) {
                 userPrefTransposedFullyPacked.push_back(userPrefMatrixTransposed[row][col]);
             }
             // Add zero padding between rows in packed form,
             // required for row-wise inner product addition with log(n) depth.
             for (int i=0; i<slotsPadded-n; ++i){ userPrefTransposedFullyPacked.push_back(0); }
-        }    
+        }
         // For packing mode 1: row-wise encryption of each permutation matrix.
         std::vector<Ciphertext<DCRTPoly>> encUserPref;
         std::vector<Ciphertext<DCRTPoly>> encUserPrefTransposed;
@@ -216,10 +214,10 @@ int main(int argc, char* argv[]) {
                                             cryptoContext->MakePackedPlaintext(userPrefTransposedFullyPacked));
 
     // Server Offline: Precompute encryptions of constants, initialize rotation keys.
+    auto numSlots = cryptoContext->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder()/2;
     InitRotsMasks initRotsMasks(cryptoContext,keyPair,n);
-    InitNotEqualZero initNotEqualZero(cryptoContext,keyPair,cryptoContext->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder()/2,
-                                                            userInputs.size()); // (..., slots, range)
-    InitPreserveLeadOne initPreserveLeadOne(cryptoContext,keyPair,n);
+    InitNotEqualZero initNotEqualZero(cryptoContext,keyPair,numSlots,userInputs.size()); 
+    InitPreserveLeadOne initPreserveLeadOne(cryptoContext,keyPair,numSlots);
     
     // Offline: Initialize enc(user-availability) and encrypted constants.
     // -----------------------------------------------------------------------
