@@ -153,7 +153,8 @@ int main(int argc, char* argv[]) {
 
     auto n = userInputs.size();
 
-    // Offline: 
+    // Offline: Encryption of user preferences.
+    // -----------------------------------------------------------------------
     // Represent user preferences as permutation matrices and their transpose.
     // Generate row-wise encryptions of each user matrix (packing mode 1),
     // or a single encryption of all user matrices (packing mode 2).
@@ -220,7 +221,8 @@ int main(int argc, char* argv[]) {
                                                             userInputs.size()); // (..., slots, range)
     InitPreserveLeadOne initPreserveLeadOne(cryptoContext,keyPair,n);
     
-    // Server Offline: Initialize enc(user-availability), enc(ones), enc([0:n])
+    // Offline: Initialize enc(user-availability) and encrypted constants.
+    // -----------------------------------------------------------------------
     // TODO: move to initialization class.
     std::vector<int64_t> ones(n,1); std::vector<int64_t> zeros(n,0);
     std::vector<int64_t> negOnes(n,cryptoContext->GetCryptoParameters()->GetPlaintextModulus()-1);
