@@ -158,11 +158,12 @@ int main(int argc, char* argv[]) {
     // Represent user preferences as permutation matrices and their transpose.
     // Generate row-wise encryptions of each user matrix (packing mode 1),
     // or a single encryption of all user matrices (packing mode 2).
+    
+    std::vector<std::vector<std::vector<int64_t>>> userPrefList;
+    std::vector<std::vector<std::vector<int64_t>>> userPrefTransposedList;
+    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefList;             
+    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefTransposedList;   
 
-    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefList;             // For packing mode 1 (row/col-wise packing of each matrices)
-    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefTransposedList;   // For Packing mode 1 (row/col-wise packing of each matrices)
-    std::vector<int64_t> userPrefFullyPacked;                                   // For packing mode 2 (full packing of user all matrices)
-    std::vector<int64_t> userPrefTransposedFullyPacked;                         // For packing mode 2 (full packing of user all matrices)
     int k_ceil = std::ceil(std::log2(n));
     int slotsPadded = std::pow(2,k_ceil);
 
@@ -170,30 +171,17 @@ int main(int argc, char* argv[]) {
         // Build user preference-permutation matrix.
         std::vector<std::vector<int64_t>> userPrefMatrix;
         for (int col=0; col < n; ++col) {
-            // For packing mode 1: build row-vector representation of user permutation matrix.
             std::vector<int64_t> row(n,0); row[userInputs[user][col]] = 1;
             userPrefMatrix.push_back(row);
-             // For packing mode 2: build single vector representation of all user permutation matrices.
-            for (auto elem: row) { userPrefFullyPacked.push_back(elem);}
-            // ... Add zero padding between rows in packed form,
-            // ... required for row-wise inner product addition with log(n) depth.
-            for (int i=0; i<slotsPadded-n; ++i){ userPrefFullyPacked.push_back(0); } 
-        }   
+        } 
+        userPrefList.push_back(userPrefMatrix);
         // Transpose user preference-permutation matrix.
         std::vector<std::vector<int64_t>> userPrefMatrixTransposed;
         std::vector<int64_t> zeroRow(n,0);
-        // For packing mode 1: buid row-vector of transposed user permutation matrix.
         for (int row=0; row < n; ++row) { userPrefMatrixTransposed.push_back(zeroRow); }
         for (int row=0; row < n; ++row) { for (int col=0; col < n; ++col) {
             userPrefMatrixTransposed[col][row] = userPrefMatrix[row][col]; }}
-        // For packing mode 2: build single vector representation of all user transposed permutation matrices.
-        for (int row=0; row < n; ++row) { 
-            for (int col=0; col < n; ++col) {
-                userPrefTransposedFullyPacked.push_back(userPrefMatrixTransposed[row][col]); }
-            // ... Add zero padding between rows in packed form,
-            // ... required for row-wise inner product addition with log(n) depth.
-            for (int i=0; i<slotsPadded-n; ++i){ userPrefTransposedFullyPacked.push_back(0); }
-        }
+        userPrefTransposedList.push_back(userPrefMatrixTransposed);
         // For packing mode 1: row-wise encryption of each permutation matrix.
         std::vector<Ciphertext<DCRTPoly>> encUserPref;
         std::vector<Ciphertext<DCRTPoly>> encUserPrefTransposed;
@@ -204,35 +192,60 @@ int main(int argc, char* argv[]) {
                                             cryptoContext->MakePackedPlaintext(userPrefMatrixTransposed[row])));
         }
         encUserPrefList.push_back(encUserPref);
-        encUserPrefTransposedList.push_back(encUserPrefTransposed);        
+        encUserPrefTransposedList.push_back(encUserPrefTransposed); 
     }
     // For packing mode 2: encryption of all user permutation matrices in individual ciphertexts.
+    std::vector<int64_t> userPrefPacked(slotsPadded*slotsPadded*n,0);
+    std::vector<int64_t> userPrefTransposedPacked(slotsPadded*slotsPadded*n,0);
+    for (int user=0; user<n ; ++user){ 
+        for (int row=0; row<n ; ++row){ 
+            for (int col=0; col<n ; ++col){ 
+                int pos = user*slotsPadded*slotsPadded+row*slotsPadded+col;
+                userPrefPacked[pos] = userPrefList[user][row][col];
+                userPrefTransposedPacked[pos] = userPrefTransposedList[user][row][col];
+            }
+        }
+    }
     auto encUserPrefFullyPacked = cryptoContext->Encrypt(keyPair.publicKey,
-                                  cryptoContext->MakePackedPlaintext(userPrefFullyPacked));
-    auto encUserPrefTransposedFullyPacked = cryptoContext->Encrypt(keyPair.publicKey,
-                                            cryptoContext->MakePackedPlaintext(userPrefTransposedFullyPacked));
+                                  cryptoContext->MakePackedPlaintext(userPrefPacked));
+    auto encUserPrefTransPacked = cryptoContext->Encrypt(keyPair.publicKey,
+                                  cryptoContext->MakePackedPlaintext(userPrefTransposedPacked));
 
     // Offline: Init objects.
     // -----------------------------------------------------------------------
     auto slotTotal = cryptoContext->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder()/2;
     InitRotsMasks initRotsMasks(cryptoContext,keyPair,n);
-    InitNotEqualZero initNotEqualZero(cryptoContext,keyPair,slotTotal,userInputs.size()); 
-    InitPreserveLeadOne initPreserveLeadOne(cryptoContext,keyPair,slotTotal);
+    InitNotEqualZero initNotEqualZero(cryptoContext,keyPair,n,userInputs.size()); // TODO: Over packed ciphertexts?
+    InitPreserveLeadOne initPreserveLeadOne(cryptoContext,keyPair,n); // TODO: Over packed ciphertexts?
     
-    // Offline: Initialize enc(user-availability) and encrypted constants.
+    // Offline: Initialize encrypted constants.
     // -----------------------------------------------------------------------
     // TODO: move to initialization class.
-    std::vector<int64_t> ones(n,1); std::vector<int64_t> zeros(n,0);
-    std::vector<int64_t> negOnes(n,cryptoContext->GetCryptoParameters()->GetPlaintextModulus()-1);
-    std::vector<int64_t> range; for (int i=0; i<n; ++i) { range.push_back(i+1); } // 1, 2, ..., n
-    auto encOnes = cryptoContext->Encrypt(keyPair.publicKey,
-                                          cryptoContext->MakePackedPlaintext(ones));
+    std::vector<int64_t> zeros(slotTotal,0);
+    std::vector<int64_t> range; for (int i=0; i<n; ++i) { range.push_back(i+1); } // TODO: not suited for packing.
+    // TODO: Initialize constants for full packing.
+    std::vector<int64_t> ones; std::vector<int64_t> negOnes;
+    for (int iter=0; iter<slotsPadded*slotsPadded; iter++){ 
+        for (int elem = 0; elem <n; elem++){
+            ones.push_back(1);
+            negOnes.push_back(-1);
+        }
+        for (int elem = 0; elem <slotsPadded-n; elem++){
+            ones.push_back(0);
+            negOnes.push_back(0);
+        }
+     }
+    // std::vector<int64_t> ones(slotTotal,1); 
+    // std::vector<int64_t> negOnes(slotTotal,cryptoContext->GetCryptoParameters()->GetPlaintextModulus()-1);
     auto encZeros = cryptoContext->Encrypt(keyPair.publicKey,
                                            cryptoContext->MakePackedPlaintext(zeros));
+    auto encOnes = cryptoContext->Encrypt(keyPair.publicKey,
+                                          cryptoContext->MakePackedPlaintext(ones));
     auto encNegOnes = cryptoContext->Encrypt(keyPair.publicKey,
                                              cryptoContext->MakePackedPlaintext(negOnes));
     auto encRange = cryptoContext->Encrypt(keyPair.publicKey,
                                            cryptoContext->MakePackedPlaintext(range));
+    // Availability vector needs special care.
 
 
     //==========================================================
@@ -405,7 +418,10 @@ int main(int argc, char* argv[]) {
     // Init output ciphertext.
     // auto enc_output = encNegOnes; // -1 output => not on cycle.
     auto enc_output = encZeros;
+    // For mode 2: Repeated availability vector in single ciphertext.
     auto encUserAvailability = encOnes; 
+    // TODO: need gaps, and nxn repetition of availability vector.
+    // auto encUserAvailabilityPacked = encOnes; 
 
     // Log crypto operations.
     CryptoOpsLogger cryptoOpsLogger;
@@ -423,57 +439,130 @@ int main(int argc, char* argv[]) {
         //----------------------------------------------------------
 
         std::vector<Ciphertext<DCRTPoly>> encRowsAdjMatrix;
+        Ciphertext<DCRTPoly> encAdjMatrixPacked;
 
         // 0: No packing 
         // 1: Row/Col matrix packing
         // 2: Full matrix packing
-        int packingModeStep1 = 1;
+        int packingModeStep1 = 2;
+
+
+        // Ciphertext output.
 
         // Begin: Timer.
         TIC(t);
-
         if (packingModeStep1 == 0){
              // TODO: 
         }
         else if (packingModeStep1 == 1){
-            // Generate adjacency matrix for all users.
-            // TODO: This step runs over row/col-wise packed ciphertexts.
             for (int user = 0; user < n; ++user){
                 auto encUserAvailablePref = evalMatrixVecMult(encUserPrefList[user], encUserAvailability,
                                                               cryptoContext, initRotsMasks); // 2 mult-depth
                 auto encUserFirstAvailablePref = evalPreserveLeadOne(encUserAvailablePref, cryptoContext, initPreserveLeadOne); // 2+log(n) mult-depth
+                // printEnc(encUserFirstAvailablePref,n,cryptoContext,keyPair);
                 encRowsAdjMatrix.push_back(evalMatrixVecMult(encUserPrefTransposedList[user], encUserFirstAvailablePref,
                                                              cryptoContext, initRotsMasks)); // 2 mult-depth
             }
         }
         else {
             assert(packingModeStep1 == 2);
-            // TODO: Availability matrix * Preference Matrices (row_11 | ... | row_1n) | (row_21 | ... | row_2n)
-            // padded(available) | padded(available)| ... (nxn repetitions)
-            // padded(row1)      | padded(row2)     | padded(row3)
+            // Multiplication: packed user preference matrices * availability matrix (repeated) 
+            // padded(user1row1)        | padded(user1row2)        | padded(user1row3) ...    | padded(user2row1)        | padded(user2row2)        ...
+            // padded(userAvailability) | padded(userAvailability) | padded(userAvailability) | padded(userAvailability) | padded(userAvailability) ...
+            auto encResMult = cryptoContext->EvalMult(encUserAvailability,encUserPrefFullyPacked); 
+            auto encResInnerProd = evalPrefixAdd(encResMult,slotsPadded,cryptoContext);      
 
-            // TODO: EvalPreserveLeadOne over padded(preferredAvailable1) | padded(preferredAvailable2) | ...
-            // TODO: PreferredAvailable matrix * Preference Matrices
-        }
+            // Extract resulting slot values.
+            std::vector<std::vector<Ciphertext<DCRTPoly>>> encAvailPrefElems;
+            for (int user = 0; user < n; user++){
+                std::vector<Ciphertext<DCRTPoly>> encElemsRow;
+                for (int slot = 0; slot < n; slot++){
+                    auto encMaskedElem = cryptoContext->EvalMult(encResInnerProd,initRotsMasks.encMasksFullyPacked()[user*n+slot]);
+                    cryptoContext->ModReduceInPlace(encMaskedElem);
+                    encElemsRow.push_back(cryptoContext->EvalRotate(encMaskedElem,((user*slotsPadded+slot)*slotsPadded)));
+                }
+                encAvailPrefElems.push_back(encElemsRow);
+            }
+            // Repack into single ciphertext (for later matrix multiplication).
+            // padded(user1AvailPref) ... | padded(user2AvailPref)| ... | padded(user3AvailPref) | ... (each repeated 2^ceil(log(n)) times)
+            std::vector<Ciphertext<DCRTPoly>> encAvailPrefContainer;
+            for (int user = 0; user < n; user++){
+                for (int slot=0; slot < n; slot++){
+                    encAvailPrefContainer.push_back(cryptoContext->EvalRotate(
+                                                    encAvailPrefElems[user][slot],-(user*slotsPadded*slotsPadded+slot)));
+                }
+            }
+            auto encUniqueAvailRows = cryptoContext->EvalAddMany(encAvailPrefContainer); 
+            auto encRepAvailRows = encUniqueAvailRows;
+            for (int k = 0; k < k_ceil; k++) {  // Copy log(n) times.
+                auto encRepAvailRows_ = cryptoContext->EvalRotate(encRepAvailRows,-std::pow(2,k)*slotsPadded);
+                encRepAvailRows = cryptoContext->EvalAdd(encRepAvailRows,encRepAvailRows_); 
+            } 
+            // Preserve leading One.
+            auto encFirstAvailPrefPacked = evalPreserveLeadOne(encRepAvailRows, cryptoContext, initPreserveLeadOne); // 2+log(n) mult-depth
 
-        std::cout << "Adjacency Matrix: " << std::endl;
-        for (int row=0; row < n; ++row){
-            Plaintext plaintext;
-            cryptoContext->Decrypt(keyPair.secretKey, encRowsAdjMatrix[row], &plaintext); 
-            plaintext->SetLength(n); auto payload = plaintext->GetPackedValue();
-            std::cout << payload << std::endl;
+            // Preferred available  * Transposed Preference Matrices
+            auto encResMult2 = cryptoContext->EvalMult(encFirstAvailPrefPacked,encUserPrefTransPacked); 
+            encAdjMatrixPacked = evalPrefixAdd(encResMult2,slotsPadded,cryptoContext); // TODO: Elements not extracted yet.      
         }
 
         // End: Timer.
         processingTime = TOC(t);
         std::cout << "Online part 1 - Adjacency matrix update time: " << processingTime << "ms" << std::endl;
 
-        // Refresh ciphertexts.
+        // Refresh adjacency matrix.
+        std::cout << "Adjacency Matrix: " << std::endl;
         std::vector<std::vector<Ciphertext<DCRTPoly>>> encAdjMatrixElems;
-        for (int row=0; row < n; ++row){
-            encAdjMatrixElems.push_back(refreshElems(encRowsAdjMatrix[row],n,keyPair,cryptoContext));
-            refreshInPlace(encRowsAdjMatrix[row],n,keyPair,cryptoContext); // This ciphertext is used in part (3).
+        if (packingModeStep1 == 0) {
+            // TODO
         }
+        else if (packingModeStep1 == 1){
+            for (int row=0; row < n; ++row){
+                // Print adjacence matrix.
+                Plaintext plaintext;
+                cryptoContext->Decrypt(keyPair.secretKey, encRowsAdjMatrix[row], &plaintext); 
+                plaintext->SetLength(n); auto payload = plaintext->GetPackedValue();
+                std::cout << payload << std::endl;
+                // Refresh ciphertexts.
+                encAdjMatrixElems.push_back(refreshElems(encRowsAdjMatrix[row],n,keyPair,cryptoContext));
+                refreshInPlace(encRowsAdjMatrix[row],n,keyPair,cryptoContext); // This ciphertext is used in part (3).
+            }
+        }
+        else {
+            assert(packingModeStep1 == 2);
+            // Refresh and repack ciphertexts.
+            Plaintext plaintext;
+            cryptoContext->Decrypt(keyPair.secretKey,encAdjMatrixPacked,&plaintext); 
+            plaintext->SetLength(slotsPadded*slotsPadded*n); auto payload = plaintext->GetPackedValue();
+            // WIP: For step 3, refresh adjacency matrix in row form.
+            encRowsAdjMatrix.clear();
+            for (int row=0; row < n; ++row){
+                std::vector<int64_t> adjMatrixRow;
+                std::vector<Ciphertext<DCRTPoly>> encAdjMatrixRow;
+                for (int col=0; col < n; ++col){
+                    int pos = row*slotsPadded*slotsPadded + col*slotsPadded;
+                    adjMatrixRow.push_back(payload[pos]);
+                    std::vector<int64_t> elementFirst(n,0); elementFirst[0] = payload[pos];
+                    encAdjMatrixRow.push_back(cryptoContext->Encrypt(keyPair.publicKey,
+                                              cryptoContext->MakePackedPlaintext(elementFirst)));
+                }
+                encAdjMatrixElems.push_back(encAdjMatrixRow);
+                // Print adjacency matrix.
+                std::cout << adjMatrixRow << std::endl; 
+                // WIP: for step 3, refresh adjacency matrix ciphertext in row form.
+                encRowsAdjMatrix.push_back(cryptoContext->Encrypt(keyPair.publicKey,
+                                           cryptoContext->MakePackedPlaintext(adjMatrixRow)));
+            }
+        }
+     
+
+        // // Refresh ciphertexts.
+        // // TODO!! decrypt and extract depending on packing mode.
+        // std::vector<std::vector<Ciphertext<DCRTPoly>>> encAdjMatrixElems;
+        // for (int row=0; row < n; ++row){
+        //     encAdjMatrixElems.push_back(refreshElems(encRowsAdjMatrix[row],n,keyPair,cryptoContext));
+        //     refreshInPlace(encRowsAdjMatrix[row],n,keyPair,cryptoContext); // This ciphertext is used in part (3).
+        // }
 
         //----------------------------------------------------------
         // (2) Matrix exponentiation for cycle finding.
@@ -498,7 +587,7 @@ int main(int argc, char* argv[]) {
         else if (packingModeStep2 == 1){
             // No packing (mode 0), Row/Col matrix packing (mode 1), Full matrix packing (mode 2) 
             auto encMatrixExpElems = evalMatSqMul(encAdjMatrixElems,n,
-                                                1, // Packing mode.
+                                                2, // Packing mode.
                                                 cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair); // TODO: keypair param for debugging
             // End: Timer.
             processingTime = TOC(t);
@@ -526,8 +615,9 @@ int main(int argc, char* argv[]) {
         else {
             assert(packingModeStep2 == 2);
             auto encMatrixExpElems = evalMatSqMul(encAdjMatrixElems,n,
-                                                2, // Packing mode.
-                                                cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair); // TODO: keypair param for debugging, remove later.
+                                                  2, // Packing mode.
+                                                  cryptoContext,initRotsMasks,cryptoOpsLogger,keyPair); 
+                                                  // TODO: keypair param for debugging, remove later.
             // TODO: refresh ciphertexts
             std::vector<int64_t> packedMatrix;
             for (int row = 0; row < n; row++){
@@ -591,17 +681,25 @@ int main(int argc, char* argv[]) {
 
         // Refresh ciphertexts.
         // TODO: During refresh, produce (0) elem-wise, (1) row/col-wise or (2) matrix-wise packed ciphertext.
+        refreshInPlace(enc_output,n,keyPair, cryptoContext);
+        refreshInPlace(encUserAvailability,n,keyPair, cryptoContext);
         if (packingModeStep1 == 0){
             // TODO: refresh individually encrypted ciphertexts.
         }
-        else if (packingModeStep1 == 1){
-            refreshInPlace(encUserAvailability,n,keyPair, cryptoContext);
-            refreshInPlace(enc_output,n,keyPair, cryptoContext);
-        }
         else {
-            assert(packingModeStep1 == 2);
-            // TODO: assume refreshed availability and output vectors.
-            // padded(availabilityVector) | padded(availabilityVector) | ... (n x n times, each padding up to next 2^k)
+            assert(packingModeStep1 == 1 || packingModeStep1 == 2);
+            // For packing mode 2: Pack copies of user availability vector into single ciphertext.
+            // padded(availabilityVector) | padded(availabilityVector) | ... (2^ceil(log(n)) x 2^ceil(log(n)) times.          
+            // For packing mode 1: Only first copy will be affect computation.
+            Plaintext plaintext; cryptoContext->Decrypt(keyPair.secretKey, encUserAvailability, &plaintext); 
+            plaintext->SetLength(n); auto userAvailability = plaintext->GetPackedValue();
+            std::vector<int64_t> fullyPackedPlaintext;
+            for (int copy=0; copy < slotsPadded*slotsPadded; ++copy) {
+                for (int elem=0; elem < n; ++elem) { fullyPackedPlaintext.push_back(userAvailability[elem]); }
+                for (int elem=0; elem<slotsPadded-n; ++elem){ fullyPackedPlaintext.push_back(0); }
+            }
+            encUserAvailability = cryptoContext->Encrypt(keyPair.publicKey,
+                                                         cryptoContext->MakePackedPlaintext(fullyPackedPlaintext));            
         }
     // End loop.
     }

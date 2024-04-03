@@ -121,7 +121,6 @@ Ciphertext<DCRTPoly> evalExponentiate(Ciphertext<DCRTPoly> &ciphertext, int expo
     return cryptoContext->EvalMultMany(ciphertexts_squarings_container);
 }
 
-
 void refreshInPlace(Ciphertext<DCRTPoly> &ciphertext, int slots, 
                     KeyPair<DCRTPoly> keyPair, CryptoContext<DCRTPoly> &cryptoContext){
     Plaintext plaintextExpRes;
