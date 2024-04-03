@@ -153,44 +153,47 @@ int main(int argc, char* argv[]) {
 
     auto n = userInputs.size();
 
-    // Offline: User preference as a permutation matrix.
-    // Translate user preference into permutation matrices
-    // and generate row-wise encryptions of each user matrix (packing mode 1),
-    // or a single encryption of all rows of all user matrices (packing mode 2).
+    // Offline: 
+    // Represent user preferences as permutation matrices and their transpose.
+    // Generate row-wise encryptions of each user matrix (packing mode 1),
+    // or a single encryption of all user matrices (packing mode 2).
 
-    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefList;             // Packing mode: 1 (row/col-wise packing of each matrices)
-    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefTransposedList;   // Packing mode: 1 (row/col-wise packing of each matrices)
-    std::vector<int64_t> userPrefFullyPacked;                                   // Packing mode: 2 (full packing of user all matrices)
-    std::vector<int64_t> userPrefTransposedFullyPacked;                         // Packing mode: 2 (full packing of user all matrices)
-    
+    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefList;             // For packing mode 1 (row/col-wise packing of each matrices)
+    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefTransposedList;   // For Packing mode 1 (row/col-wise packing of each matrices)
+    std::vector<int64_t> userPrefFullyPacked;                                   // For packing mode 2 (full packing of user all matrices)
+    std::vector<int64_t> userPrefTransposedFullyPacked;                         // For packing mode 2 (full packing of user all matrices)
     int k_ceil = std::ceil(std::log2(n));
     int slotsPadded = std::pow(2,k_ceil);
 
     for (int user=0; user < n; ++user) { 
-        // Derive user preference-permutation matrix.
+        // Build user preference-permutation matrix.
         std::vector<std::vector<int64_t>> userPrefMatrix;
         for (int col=0; col < n; ++col) {
-            // For packing mode 1: row-vector of user permutation matrix.
+            // For packing mode 1: build row-vector representation of user permutation matrix.
             std::vector<int64_t> row(n,0); row[userInputs[user][col]] = 1;
             userPrefMatrix.push_back(row);
-             // For packing mode 2: vector with all transposed user permutation matrices.
+             // For packing mode 2: build single vector representation of all user permutation matrices.
             for (auto elem: row) { userPrefFullyPacked.push_back(elem);}
+            // Add zero padding between rows in packed form,
+            // equired for row-wise inner product addition with log(n) depth.
             for (int i=0; i<slotsPadded-n; ++i){ userPrefFullyPacked.push_back(0); } 
         }   
         // Transpose user preference-permutation matrix.
         std::vector<std::vector<int64_t>> userPrefMatrixTransposed;
         std::vector<int64_t> zeroRow(n,0);
-        // For packing mode 1: row-vector of transposed user permutation matrix.
+        // For packing mode 1: buid row-vector of transposed user permutation matrix.
         for (int row=0; row < n; ++row) { userPrefMatrixTransposed.push_back(zeroRow); }
         for (int row=0; row < n; ++row) { for (int col=0; col < n; ++col) {
             // if (userPrefMatrix[row][col] == 1) { userPrefMatrixTransposed[col][row] = 1; break; }
             userPrefMatrixTransposed[col][row] = userPrefMatrix[row][col];
         }}
-        // For packing mode 2: vector with all transposed user permutation matrices.
+        // For packing mode 2: build single vector representation of all user transposed permutation matrices.
         for (int row=0; row < n; ++row) { 
             for (int col=0; col < n; ++col) {
                 userPrefTransposedFullyPacked.push_back(userPrefMatrixTransposed[row][col]);
             }
+            // Add zero padding between rows in packed form,
+            // required for row-wise inner product addition with log(n) depth.
             for (int i=0; i<slotsPadded-n; ++i){ userPrefTransposedFullyPacked.push_back(0); }
         }    
         // For packing mode 1: row-wise encryption of each permutation matrix.
@@ -205,12 +208,11 @@ int main(int argc, char* argv[]) {
         encUserPrefList.push_back(encUserPref);
         encUserPrefTransposedList.push_back(encUserPrefTransposed);        
     }
-    // For packing mode 2: encryption of all permutation matrices in one ciphertext.
+    // For packing mode 2: encryption of all user permutation matrices in individual ciphertexts.
     auto encUserPrefFullyPacked = cryptoContext->Encrypt(keyPair.publicKey,
                                   cryptoContext->MakePackedPlaintext(userPrefFullyPacked));
     auto encUserPrefTransposedFullyPacked = cryptoContext->Encrypt(keyPair.publicKey,
                                             cryptoContext->MakePackedPlaintext(userPrefTransposedFullyPacked));
-
 
     // Server Offline: Precompute encryptions of constants, initialize rotation keys.
     InitRotsMasks initRotsMasks(cryptoContext,keyPair,n);
