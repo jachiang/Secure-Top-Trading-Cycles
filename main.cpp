@@ -175,8 +175,8 @@ int main(int argc, char* argv[]) {
             userPrefMatrix.push_back(row);
              // For packing mode 2: build single vector representation of all user permutation matrices.
             for (auto elem: row) { userPrefFullyPacked.push_back(elem);}
-            // Add zero padding between rows in packed form,
-            // equired for row-wise inner product addition with log(n) depth.
+            // ... Add zero padding between rows in packed form,
+            // ... required for row-wise inner product addition with log(n) depth.
             for (int i=0; i<slotsPadded-n; ++i){ userPrefFullyPacked.push_back(0); } 
         }   
         // Transpose user preference-permutation matrix.
@@ -185,24 +185,23 @@ int main(int argc, char* argv[]) {
         // For packing mode 1: buid row-vector of transposed user permutation matrix.
         for (int row=0; row < n; ++row) { userPrefMatrixTransposed.push_back(zeroRow); }
         for (int row=0; row < n; ++row) { for (int col=0; col < n; ++col) {
-            userPrefMatrixTransposed[col][row] = userPrefMatrix[row][col];
-        }}
+            userPrefMatrixTransposed[col][row] = userPrefMatrix[row][col]; }}
         // For packing mode 2: build single vector representation of all user transposed permutation matrices.
-        for (int row=0; row < n; ++row) { for (int col=0; col < n; ++col) {
-                userPrefTransposedFullyPacked.push_back(userPrefMatrixTransposed[row][col]);
-            }
-            // Add zero padding between rows in packed form,
-            // required for row-wise inner product addition with log(n) depth.
+        for (int row=0; row < n; ++row) { 
+            for (int col=0; col < n; ++col) {
+                userPrefTransposedFullyPacked.push_back(userPrefMatrixTransposed[row][col]); }
+            // ... Add zero padding between rows in packed form,
+            // ... required for row-wise inner product addition with log(n) depth.
             for (int i=0; i<slotsPadded-n; ++i){ userPrefTransposedFullyPacked.push_back(0); }
         }
         // For packing mode 1: row-wise encryption of each permutation matrix.
         std::vector<Ciphertext<DCRTPoly>> encUserPref;
         std::vector<Ciphertext<DCRTPoly>> encUserPrefTransposed;
-        for (int j=0; j<n ; ++j){ 
+        for (int row=0; row<n ; ++row){ 
             encUserPref.push_back(cryptoContext->Encrypt(keyPair.publicKey,
-                                  cryptoContext->MakePackedPlaintext(userPrefMatrix[j])));
+                                  cryptoContext->MakePackedPlaintext(userPrefMatrix[row])));
             encUserPrefTransposed.push_back(cryptoContext->Encrypt(keyPair.publicKey,
-                                            cryptoContext->MakePackedPlaintext(userPrefMatrixTransposed[j])));
+                                            cryptoContext->MakePackedPlaintext(userPrefMatrixTransposed[row])));
         }
         encUserPrefList.push_back(encUserPref);
         encUserPrefTransposedList.push_back(encUserPrefTransposed);        
@@ -213,11 +212,12 @@ int main(int argc, char* argv[]) {
     auto encUserPrefTransposedFullyPacked = cryptoContext->Encrypt(keyPair.publicKey,
                                             cryptoContext->MakePackedPlaintext(userPrefTransposedFullyPacked));
 
-    // Server Offline: Precompute encryptions of constants, initialize rotation keys.
-    auto numSlots = cryptoContext->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder()/2;
+    // Offline: Init objects.
+    // -----------------------------------------------------------------------
+    auto slotTotal = cryptoContext->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder()/2;
     InitRotsMasks initRotsMasks(cryptoContext,keyPair,n);
-    InitNotEqualZero initNotEqualZero(cryptoContext,keyPair,numSlots,userInputs.size()); 
-    InitPreserveLeadOne initPreserveLeadOne(cryptoContext,keyPair,numSlots);
+    InitNotEqualZero initNotEqualZero(cryptoContext,keyPair,slotTotal,userInputs.size()); 
+    InitPreserveLeadOne initPreserveLeadOne(cryptoContext,keyPair,slotTotal);
     
     // Offline: Initialize enc(user-availability) and encrypted constants.
     // -----------------------------------------------------------------------
