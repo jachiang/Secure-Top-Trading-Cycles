@@ -11,19 +11,20 @@ InitNotEqualZero::InitNotEqualZero(CryptoContext<DCRTPoly> &cryptoContext, KeyPa
     int invFactorialRange = modInverse(factorialRange, plaintxtModulus); 
 
     // Packed encryption of constants.
-    std::vector<int64_t> invfPacked(slots,invFactorialRange);
+    int slotsPadded = std::pow(2, std::ceil(std::log2(slots)));
+    std::vector<int64_t> invfPacked(slots*slotsPadded,invFactorialRange);
     encInvFactorial_= cryptoContext->Encrypt(keyPair.publicKey,
                                                 cryptoContext->MakePackedPlaintext(invfPacked));
-    std::vector<int64_t> onePacked(slots,1); 
+    std::vector<int64_t> onePacked(slots*slotsPadded,1); 
     encOne_ = cryptoContext->Encrypt(keyPair.publicKey,
                                         cryptoContext->MakePackedPlaintext(onePacked));    
-    std::vector<int64_t> negOnePacked(slots,plaintxtModulus-1); 
+    std::vector<int64_t> negOnePacked(slots*slotsPadded,plaintxtModulus-1); 
     encNegOne_ = cryptoContext->Encrypt(keyPair.publicKey,
                                         cryptoContext->MakePackedPlaintext(negOnePacked));  
     for (size_t i=1 ; i <= range ; ++i){ 
-    std::vector<int64_t> negIntPacked(slots,plaintxtModulus-i); 
+    std::vector<int64_t> negIntPacked(slots*slotsPadded,plaintxtModulus-i); 
     encNegRange_.push_back(cryptoContext->Encrypt(keyPair.publicKey,
-                            cryptoContext->MakePackedPlaintext(negIntPacked)));
+                           cryptoContext->MakePackedPlaintext(negIntPacked)));
     };
 }
 
