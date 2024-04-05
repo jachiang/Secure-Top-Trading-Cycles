@@ -187,7 +187,6 @@ int main(int argc, char* argv[]) {
     // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
     // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
 
-
     auto n = userInputs.size();
 
     // Offline: Encryption of user preferences.
@@ -410,7 +409,6 @@ int main(int argc, char* argv[]) {
         // 2a) Matrix exponentiation.
         //----------------------------------------------------------
         // Cycle finding result [res_1, ..., res_n]. On cycle, res_i = 1. Not on cycle: res_i = 0.
-        // Variables to be refreshed after phase 2a.
         std::vector<std::vector<Ciphertext<DCRTPoly>>> encMatrixExpElems; 
 
         TIC(t);
@@ -431,8 +429,8 @@ int main(int argc, char* argv[]) {
 
         // Refresh after phase (2a)
         //----------------------------------------------------------
-        std::vector<Ciphertext<DCRTPoly>> encMatrixExp; // Refreshed & repacked output for packing mode 1.
-        Ciphertext<DCRTPoly> encMatrixExpPacked;        // Refreshed & repacked output for packing mode 2.
+        std::vector<Ciphertext<DCRTPoly>> encMatrixExp; // Refreshed & repacked output in packing mode 1.
+        Ciphertext<DCRTPoly> encMatrixExpPacked;        // Refreshed & repacked output in packing mode 2.
 
         if (packingMode == 1){
             // TODO: perform this elem to column transform in refresh.
@@ -461,8 +459,8 @@ int main(int argc, char* argv[]) {
 
         // 2b) Cycle computation.
         //----------------------------------------------------------
-        Ciphertext<DCRTPoly> enc_u;             // Output for packing mode 1.
-        Ciphertext<DCRTPoly> enc_u_unmasked;    // Output for packing mode 2.
+        Ciphertext<DCRTPoly> enc_u;             // Output in packing mode 1.
+        Ciphertext<DCRTPoly> enc_u_unmasked;    // Output in packing mode 2.
 
         TIC(t); // Begin: Timer.
         if (packingMode == 1){
@@ -504,9 +502,8 @@ int main(int argc, char* argv[]) {
         //----------------------------------------------------------
         // (3) Update user availability and outputs.
         //----------------------------------------------------------
-        
-        // Begin: Timer.
-        TIC(t);
+
+        TIC(t); // Begin: Timer.
         // Compute current preference index (t) for all users in packed ciphertext.
         std::vector<Ciphertext<DCRTPoly>> enc_elements;
         for (int user=0; user < n; ++user){ 
@@ -529,28 +526,28 @@ int main(int argc, char* argv[]) {
         auto enc_output_reduced = evalNotEqualZero(enc_output,cryptoContext,initNotEqualZero); 
         encUserAvailability = cryptoContext->EvalAdd(encOnes,
                                                      cryptoContext->EvalMult(enc_output_reduced, encNegOnes));
-
-        // End: Timer.
-        processingTime = TOC(t);  
+        processingTime = TOC(t); // End: Timer.
         std::cout << "Online part 3 - User availability & output update: " << processingTime << "ms" << std::endl;
         
-        // Print availability vector.
+        // Print availability & output vector (TODO: move to refresh).
         std::cout << "Availability vector: "; printEnc(encUserAvailability,n,cryptoContext,keyPair); 
-
-        // Print output vector.
         std::cout << "Output vector: "; printEnc(enc_output,n,cryptoContext,keyPair); 
 
         // Refresh after phase (3).
         //----------------------------------------------------------
-        // TODO: During refresh, produce (0) elem-wise, (1) row/col-wise or (2) matrix-wise packed ciphertext.
-        refreshInPlace(enc_output,n,keyPair, cryptoContext);
-        refreshInPlace(encUserAvailability,n,keyPair, cryptoContext);
+        // refreshInPlace(enc_output,n,keyPair, cryptoContext);
         if (packingMode == 1 || packingMode == 2) {
-            // For packing mode 2: Pack copies of user availability vector into single ciphertext.
-            // padded(availabilityVector) | padded(availabilityVector) | ... (2^ceil(log(n)) x 2^ceil(log(n)) times.          
-            // For packing mode 1: Only first copy will be affect computation.
-            Plaintext plaintext; cryptoContext->Decrypt(keyPair.secretKey, encUserAvailability, &plaintext); 
+            // Refresh encrypted output vector.
+            Plaintext plaintext; cryptoContext->Decrypt(keyPair.secretKey, enc_output, &plaintext); 
+            plaintext->SetLength(n); auto output = plaintext->GetPackedValue();
+            std::cout << "Output vector: " << output << std::endl;
+            enc_output = cryptoContext->Encrypt(keyPair.publicKey,
+                                                cryptoContext->MakePackedPlaintext(output));       
+            // For packing mode 2: Refresh & pack copies of user availability vector into single ciphertext.
+            cryptoContext->Decrypt(keyPair.secretKey, encUserAvailability, &plaintext); 
             plaintext->SetLength(n); auto userAvailability = plaintext->GetPackedValue();
+            std::cout << "Availability vector: " << userAvailability << std::endl;
+            // padded(availabilityVector) | padded(availabilityVector) | ... (2^ceil(log(n)) x 2^ceil(log(n)) times.          
             std::vector<int64_t> fullyPackedPlaintext;
             for (int copy=0; copy < slotsPadded*slotsPadded; ++copy) {
                 for (int elem=0; elem < n; ++elem) { fullyPackedPlaintext.push_back(userAvailability[elem]); }
