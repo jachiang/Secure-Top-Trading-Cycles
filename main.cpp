@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) {
     CryptoContext<DCRTPoly> cryptoContext2b = GenCryptoContext(params2b);
     CryptoContext<DCRTPoly> cryptoContext3 = GenCryptoContext(params3);
 
-    std::cout << "Ring dimension N: " << cryptoContext1->GetRingDimension() << std::endl;
+    // std::cout << "Ring dimension N: " << cryptoContext1->GetRingDimension() << std::endl;
 
     cryptoContext1->Enable(PKE); cryptoContext1->Enable(KEYSWITCH); cryptoContext1->Enable(LEVELEDSHE); cryptoContext1->Enable(ADVANCEDSHE);
     cryptoContext2a->Enable(PKE); cryptoContext2a->Enable(KEYSWITCH); cryptoContext2a->Enable(LEVELEDSHE); cryptoContext2a->Enable(ADVANCEDSHE);
@@ -513,7 +513,7 @@ int main(int argc, char* argv[]) {
         TIC(t); // Begin: Timer.
         // Compute current preference index (t) for all users in packed ciphertext.
         std::vector<Ciphertext<DCRTPoly>> enc_elements;
-        for (int user=0; user < n; ++user){ 
+        for (int user=0; user < n; ++user){ // TODO: Implement with full packing.
             // Note: encRowsAdjMatrix must be refreshed after (1)
             auto enc_t_user = cryptoContext1->EvalInnerProduct(encRowsAdjMatrix[user], encRange, 
                                                               encRowsAdjMatrix.size());
@@ -536,7 +536,6 @@ int main(int argc, char* argv[]) {
         processingTime = TOC(t); // End: Timer.
         std::cout << "Online part 3 - User availability & output update: " << processingTime << "ms" << std::endl;
         
-
         // Refresh after phase (3).
         //----------------------------------------------------------
         // refreshInPlace(enc_output,n,keyPair, cryptoContext1);
