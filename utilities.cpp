@@ -49,7 +49,7 @@ int CryptoOpsLogger::totalTime() { return innerProdTime_+addManyTime_+multTime_+
 
 VectorIter::VectorIter(int modulus, int slots) {
     mod_ = modulus;
-    for (size_t i = 0; i < slots; ++i) { vectorIter_.push_back(0); }
+    for (int i = 0; i < slots; ++i) { vectorIter_.push_back(0); }
 };
 std::vector<int> VectorIter::value() {
     return vectorIter_;
@@ -59,7 +59,7 @@ bool VectorIter::iterate() {
 };
 bool VectorIter::iterate_(int slot) {
     // Case 0: Highest idx cannot be incremented further.
-    if (slot == vectorIter_.size()-1 && (vectorIter_[slot] == mod_-1)) { return false; }
+    if (slot == int(vectorIter_.size())-1 && (vectorIter_[slot] == mod_-1)) { return false; }
     // Case 1: Increment & carry. 
     else if (vectorIter_[slot] == mod_ - 1) {
         vectorIter_[slot] = 0; if (iterate_(slot+1)) { return true; } else { return false; }}
