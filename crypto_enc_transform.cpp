@@ -7,7 +7,7 @@ std::vector<Ciphertext<DCRTPoly>> rowToColEnc(std::vector<Ciphertext<DCRTPoly>> 
                                               InitRotsMasks &InitRotsMasks,
                                               CryptoOpsLogger &cryptoOpsLogger) {
     // Assumes n x n matrix: n plaintext slots in each row encryption.
-    auto n = encRows.size();
+    int n = encRows.size();
     // Populate column containers with encryptions of isolated matrix elements.
     std::vector<std::vector<Ciphertext<DCRTPoly>>> enc_col_container; 
     for (int row=0 ; row < n ; ++row){ 
@@ -52,7 +52,7 @@ std::vector<Ciphertext<DCRTPoly>> // Row-encrypted output matrix.
                 InitRotsMasks &initRotsMasks,
                 CryptoOpsLogger &cryptoOpsLogger) {
     // Derive enc(row) form of input matrix elements.
-    auto n = encMatElems.size(); // TODO: Verify input.
+    int n = encMatElems.size(); // TODO: Verify input.
     std::vector<Ciphertext<DCRTPoly>> encMatRows;
     for (int row=0 ; row < n ; ++row){ 
         std::vector<Ciphertext<DCRTPoly>> encRowContainer;
@@ -82,7 +82,7 @@ std::vector<Ciphertext<DCRTPoly>> // Col-encrypted output matrix.
                 InitRotsMasks &initRotsMasks,
                 CryptoOpsLogger &cryptoOpsLogger) {
     // Derive enc(col) form of input matrix elements.
-    auto n = encMatElems.size(); // TODO: Verify input.
+    int n = encMatElems.size(); // TODO: Verify input.
     std::vector<Ciphertext<DCRTPoly>> encMatCols;
     for (int col=0 ; col < n ; ++col){ 
         std::vector<Ciphertext<DCRTPoly>> encColContainer;
