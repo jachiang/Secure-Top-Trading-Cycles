@@ -21,7 +21,7 @@ InitNotEqualZero::InitNotEqualZero(CryptoContext<DCRTPoly> &cryptoContext, KeyPa
     std::vector<int64_t> negOnePacked(slots*slotsPadded,plaintxtModulus-1); 
     encNegOne_ = cryptoContext->Encrypt(keyPair.publicKey,
                                         cryptoContext->MakePackedPlaintext(negOnePacked));  
-    for (size_t i=1 ; i <= range ; ++i){ 
+    for (int i=1 ; i <= range ; ++i){ 
     std::vector<int64_t> negIntPacked(slots*slotsPadded,plaintxtModulus-i); 
     encNegRange_.push_back(cryptoContext->Encrypt(keyPair.publicKey,
                            cryptoContext->MakePackedPlaintext(negIntPacked)));
@@ -40,7 +40,7 @@ Ciphertext<DCRTPoly> evalNotEqualZero(Ciphertext<DCRTPoly> &ciphertext,
     // If x is in range, outputs 1. 
     // 1-(x-1)(x-2)...(x-r)/r! 
     std::vector<Ciphertext<DCRTPoly>> encDiffs;
-    for (size_t i=0 ; i < initNotEqualZero.range ; ++i){ 
+    for (int i=0 ; i < initNotEqualZero.range ; ++i){ 
         encDiffs.push_back(cryptoContext->EvalAdd(ciphertext, initNotEqualZero.encNegRange()[i]));
     }
     encDiffs.push_back(initNotEqualZero.encInvFactorial());

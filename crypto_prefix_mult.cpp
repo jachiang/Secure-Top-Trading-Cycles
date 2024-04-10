@@ -13,10 +13,10 @@ Ciphertext<DCRTPoly> evalPrefixMult(Ciphertext<DCRTPoly> &ciphertext,
     // Precompute rotation steps and plaintext masks. 
     // TODO: Move to precomputation (low priority, no cryptographic ops).
     std::vector<int32_t> rotSteps; std::vector<Plaintext> leadingOnesPlaintxts;
-    for (size_t i = 0; i < depth; i++) { 
+    for (int i = 0; i < depth; i++) { 
         rotSteps.push_back(std::pow(2, i)); 
         // std::vector<int64_t> prefixOnes(slots,0); 
-        // for (size_t j = 0; j < rotSteps.back(); j++) { prefixOnes[j] = 1; }
+        // for (int j = 0; j < rotSteps.back(); j++) { prefixOnes[j] = 1; }
         // Prefix ones are packed with nxn repetitions..
         std::vector<int64_t> prefixOnes;
         for (int copy=0;copy<slotsPadded*n;copy++){ 
@@ -27,7 +27,7 @@ Ciphertext<DCRTPoly> evalPrefixMult(Ciphertext<DCRTPoly> &ciphertext,
     }
     // Compute prefix multiplications.
     auto ciphertext1 = ciphertext;
-    for (size_t lvl = 0; lvl < depth; lvl++) {
+    for (int lvl = 0; lvl < depth; lvl++) {
         auto ciphertext2 = cryptoContext->EvalRotate(ciphertext1, -rotSteps[lvl]);
         // Pad ciphertext2 with leading 1's.        
         ciphertext2 = cryptoContext->EvalAdd(ciphertext2, leadingOnesPlaintxts[lvl]);
@@ -52,17 +52,17 @@ Ciphertext<DCRTPoly> evalPrefixAdd(Ciphertext<DCRTPoly> &ciphertext,
     // TODO: Move to precomputation (low priority, no cryptographic ops).
     std::vector<int32_t> rotSteps; 
     // std::vector<Plaintext> leadingOnesPlaintxts;
-    for (size_t i = 0; i < levels; i++) { 
+    for (int i = 0; i < levels; i++) { 
         rotSteps.push_back(std::pow(2, i)); 
         // TODO: generate rotation keys.
         // std::vector<int64_t> prefixOnes(slots,0); 
-        // for (size_t j = 0; j < rotSteps.back(); j++) { prefixOnes[j] = 1; }
+        // for (int j = 0; j < rotSteps.back(); j++) { prefixOnes[j] = 1; }
         // leadingOnesPlaintxts.push_back(cryptoContext->MakePackedPlaintext(prefixOnes));
     }
 
     // Compute prefix addition.
     auto ciphertext1 = ciphertext;
-    for (size_t i = 0; i < levels; i++) {
+    for (int i = 0; i < levels; i++) {
         auto ciphertext2 = cryptoContext->EvalRotate(ciphertext1, rotSteps[i]);
         // // Pad ciphertext2 with leading 1's.        
         // ciphertext2 = cryptoContext->EvalAdd(ciphertext2, leadingOnesPlaintxts[i]);

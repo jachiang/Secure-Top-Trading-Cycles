@@ -75,10 +75,10 @@ int main(int argc, char* argv[]) {
     // generate homomorphic evaluation multiplication keys for s^2 and s^3
     CCParams<CryptoContextBGVRNS> params1, params2a, params2b, params3;
 
-    int chosen_depth1 = 10;
-    int chosen_depth2a = 10;
-    int chosen_depth2b = 10;
-    int chosen_depth3 = 10;
+    int chosen_depth1 = 9;
+    int chosen_depth2a = 9;
+    int chosen_depth2b = 9;
+    int chosen_depth3 = 9;
 
     int chosen_ptxtmodulus = 65537;
     params1.SetPlaintextModulus(chosen_ptxtmodulus); params1.SetMultiplicativeDepth(chosen_depth1);  params1.SetMaxRelinSkDeg(3);
@@ -194,7 +194,7 @@ int main(int argc, char* argv[]) {
     // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
     // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
 
-    auto n = userInputs.size();
+    int n = userInputs.size();
 
     // Offline: Encryption of user preferences.
     // -----------------------------------------------------------------------
@@ -279,6 +279,25 @@ int main(int argc, char* argv[]) {
                                              cryptoContext1->MakePackedPlaintext(negOnes));
     auto encRange = cryptoContext1->Encrypt(keyPair.publicKey,
                                            cryptoContext1->MakePackedPlaintext(range));
+
+
+    //==========================================================
+    // Runtime test for single operations.
+    //==========================================================
+
+    // auto res = encRange;
+    // auto rotDegree = std::pow(2,10);
+    // for (int i = 0; i<chosen_depth1; ++i){
+    //     std::cout << "Depth: " << i << std::endl;
+    //     TIC(t); res = cryptoContext1->EvalRotate(res, rotDegree);
+    //     processingTime = TOC(t);
+    //     std::cout << "Rotation: " << processingTime << "ms" << std::endl;
+    //     TIC(t); res = cryptoContext1->EvalMult(res,res);
+    //     cryptoContext1->ModReduceInPlace(res);
+    //     processingTime = TOC(t);
+    //     std::cout << "Multiplication: " << processingTime << "ms" << std::endl;
+    // }
+    // return 0;
 
 
     //==========================================================

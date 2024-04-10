@@ -10,8 +10,8 @@ std::vector<Ciphertext<DCRTPoly>> rowToColEnc(std::vector<Ciphertext<DCRTPoly>> 
     auto n = encRows.size();
     // Populate column containers with encryptions of isolated matrix elements.
     std::vector<std::vector<Ciphertext<DCRTPoly>>> enc_col_container; 
-    for (size_t row=0 ; row < n ; ++row){ 
-        for (size_t elem=0 ; elem < n ; ++elem){ 
+    for (int row=0 ; row < n ; ++row){ 
+        for (int elem=0 ; elem < n ; ++elem){ 
             // Isolate row element and shift element to corresponding position in column.
             // Compute & log Multiplication over ciphertexts.
             auto mask = InitRotsMasks.encMasks();
@@ -36,7 +36,7 @@ std::vector<Ciphertext<DCRTPoly>> rowToColEnc(std::vector<Ciphertext<DCRTPoly>> 
     }
     // Add all ciphertexts in each column container.
     std::vector<Ciphertext<DCRTPoly>> encCols; 
-    for (size_t col=0 ; col < n ; ++col){ 
+    for (int col=0 ; col < n ; ++col){ 
         // Compute & log AddMany over ciphertexts.
         TimeVar t; TIC(t);
         encCols.push_back(cryptoContext->EvalAddMany(enc_col_container[col]));
@@ -54,9 +54,9 @@ std::vector<Ciphertext<DCRTPoly>> // Row-encrypted output matrix.
     // Derive enc(row) form of input matrix elements.
     auto n = encMatElems.size(); // TODO: Verify input.
     std::vector<Ciphertext<DCRTPoly>> encMatRows;
-    for (size_t row=0 ; row < n ; ++row){ 
+    for (int row=0 ; row < n ; ++row){ 
         std::vector<Ciphertext<DCRTPoly>> encRowContainer;
-        for (size_t col=0 ; col < n ; ++col){ 
+        for (int col=0 ; col < n ; ++col){ 
             // auto encElemMasked = cryptoContext->EvalMult(encMatElems[row][col], initRotsMasks.encMasks()[0]);      
             // cryptoContext->ModReduceInPlace(encElemMasked);
             auto encElemMasked = encMatElems[row][col];
@@ -84,9 +84,9 @@ std::vector<Ciphertext<DCRTPoly>> // Col-encrypted output matrix.
     // Derive enc(col) form of input matrix elements.
     auto n = encMatElems.size(); // TODO: Verify input.
     std::vector<Ciphertext<DCRTPoly>> encMatCols;
-    for (size_t col=0 ; col < n ; ++col){ 
+    for (int col=0 ; col < n ; ++col){ 
         std::vector<Ciphertext<DCRTPoly>> encColContainer;
-        for (size_t row=0 ; row < n ; ++row){ 
+        for (int row=0 ; row < n ; ++row){ 
             // auto encElemMasked = cryptoContext->EvalMult(encMatElems[row][col], initRotsMasks.encMasks()[0]);
             // cryptoContext->ModReduceInPlace(encElemMasked);
             auto encElemMasked = encMatElems[row][col];
