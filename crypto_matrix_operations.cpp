@@ -210,7 +210,7 @@ std::vector<std::vector<Ciphertext<DCRTPoly>>> evalMatSqMul(std::vector<std::vec
     auto encMatRes = encMatsTemp.back(); encMatsTemp.pop_back();
     if (encMatsTemp.size() == 0) { return encMatRes; }
     else {
-        for (int i = 0; i < encMatsTemp.size(); i++) {
+        for (int i = 0; i < int(encMatsTemp.size()); i++) {
             // std::cout << "Sequential mult step: " << i << std::endl;
             std::vector<std::vector<std::vector<Ciphertext<DCRTPoly>>>> encMatsForMult;
             encMatsForMult.push_back(encMatRes);
@@ -229,7 +229,7 @@ Ciphertext<DCRTPoly> evalMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &encRow
                                        InitRotsMasks &initRotsMasks) {
     // TODO: assert slots in initMatrixVecMult consistent with inputs.
     std::vector<Ciphertext<DCRTPoly>> enc_elements;
-    for (int row=0 ; row < encRows.size() ; ++row){ 
+    for (int row=0 ; row < int(encRows.size()) ; ++row){ 
         auto enc_element = cryptoContext->EvalInnerProduct(encRows[row], enc_vec, 
                                                            encRows.size());
         auto enc_element_masked = cryptoContext->EvalMult(enc_element, initRotsMasks.encMasks()[0]);         
@@ -250,7 +250,7 @@ Ciphertext<DCRTPoly> evalVecMatrixMult(Ciphertext<DCRTPoly> &enc_vec,
                                        CryptoOpsLogger &cryptoOpsLogger) {
     // TODO: assert slots in initMatrixVecMult consistent with inputs.
     std::vector<Ciphertext<DCRTPoly>> enc_elements;
-    for (int col=0 ; col < encCols.size() ; ++col){ 
+    for (int col=0 ; col < int(encCols.size()) ; ++col){ 
         // Require col encryptions of matrix.
         // auto encCols = rowToColEnc(encRows,cryptoContext, initRotsMasks,cryptoOpsLogger); 
         auto enc_element = cryptoContext->EvalInnerProduct(encCols[col], enc_vec, 
