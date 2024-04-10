@@ -10,7 +10,7 @@ void printEnc(Ciphertext<DCRTPoly> &cipher, int slots, CryptoContext<DCRTPoly> &
 
 
 void printEncMatRows(std::vector<Ciphertext<DCRTPoly>> &encMatRows, CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair){
-    for (int row=0; row < encMatRows.size(); ++row){
+    for (int row=0; row < int(encMatRows.size()); ++row){
         Plaintext plaintext;
         cryptoContext->Decrypt(keyPair.secretKey, encMatRows[row], &plaintext); 
         plaintext->SetLength(encMatRows.size()); auto payload = plaintext->GetPackedValue();
@@ -20,8 +20,8 @@ void printEncMatRows(std::vector<Ciphertext<DCRTPoly>> &encMatRows, CryptoContex
 
 
 void printEncMatElems(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElems, CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair){
-    for (int row=0; row < encMatElems.size(); ++row){
-        for (int col=0; col < encMatElems.size(); ++col){
+    for (int row=0; row < int(encMatElems.size()); ++row){
+        for (int col=0; col < int(encMatElems.size()); ++col){
             Plaintext plaintext;
             cryptoContext->Decrypt(keyPair.secretKey, encMatElems[row][col], &plaintext); 
             plaintext->SetLength(1); auto payload = plaintext->GetPackedValue();
