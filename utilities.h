@@ -8,6 +8,7 @@ int modFactorial(int n, int modulus);
 int gcdExtended(int a, int b, int* x, int* y);
 int modInverse(int A, int M);
 
+std::vector<int64_t> repFillSlots(std::vector<int64_t> vecIn, int maxSlots);
 
 class CryptoOpsLogger {
 public:

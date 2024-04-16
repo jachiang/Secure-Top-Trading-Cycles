@@ -60,6 +60,16 @@ using namespace lbcrypto;
 int main(int argc, char* argv[]) {
 
     ////////////////////////////////////////////////////////////
+    // Test parameters.
+    ////////////////////////////////////////////////////////////
+
+    // 1: Row/Col-wise matrix packing (naive)
+    // 2: Flat matrix packing (low mult depth).
+    // 3: Diagonal matrix packing (low runtime).
+    int packingMode = 3;
+    // TODO: Set user number n here.
+
+    ////////////////////////////////////////////////////////////
     // Set-up of parameters
     ////////////////////////////////////////////////////////////
 
@@ -75,29 +85,17 @@ int main(int argc, char* argv[]) {
     // generate homomorphic evaluation multiplication keys for s^2 and s^3
     CCParams<CryptoContextBGVRNS> params1, params2a, params2b, params3;
 
-    int chosen_depth1 = 9;
-    int chosen_depth2a = 9;
-    int chosen_depth2b = 9;
-    int chosen_depth3 = 9;
-
+    int chosen_depth1 = 10;
     int chosen_ptxtmodulus = 65537;
     params1.SetPlaintextModulus(chosen_ptxtmodulus); params1.SetMultiplicativeDepth(chosen_depth1);  params1.SetMaxRelinSkDeg(3);
-    params2a.SetPlaintextModulus(chosen_ptxtmodulus);params2a.SetMultiplicativeDepth(chosen_depth2a);params2a.SetMaxRelinSkDeg(3);
-    params2b.SetPlaintextModulus(chosen_ptxtmodulus);params2b.SetMultiplicativeDepth(chosen_depth2b);params2b.SetMaxRelinSkDeg(3);
-    params3.SetPlaintextModulus(chosen_ptxtmodulus); params3.SetMultiplicativeDepth(chosen_depth3);  params3.SetMaxRelinSkDeg(3);
     // TODO: Fermats thm works for p = 786433, dep = 20.
 
+    // Global context.
     CryptoContext<DCRTPoly> cryptoContext1 = GenCryptoContext(params1);
-    CryptoContext<DCRTPoly> cryptoContext2a = GenCryptoContext(params2a);
-    CryptoContext<DCRTPoly> cryptoContext2b = GenCryptoContext(params2b);
-    CryptoContext<DCRTPoly> cryptoContext3 = GenCryptoContext(params3);
-
-    // std::cout << "Ring dimension N: " << cryptoContext1->GetRingDimension() << std::endl;
-
     cryptoContext1->Enable(PKE); cryptoContext1->Enable(KEYSWITCH); cryptoContext1->Enable(LEVELEDSHE); cryptoContext1->Enable(ADVANCEDSHE);
-    cryptoContext2a->Enable(PKE); cryptoContext2a->Enable(KEYSWITCH); cryptoContext2a->Enable(LEVELEDSHE); cryptoContext2a->Enable(ADVANCEDSHE);
-    cryptoContext2b->Enable(PKE); cryptoContext2b->Enable(KEYSWITCH); cryptoContext2b->Enable(LEVELEDSHE); cryptoContext2b->Enable(ADVANCEDSHE);
-    cryptoContext3->Enable(PKE); cryptoContext3->Enable(KEYSWITCH); cryptoContext3->Enable(LEVELEDSHE); cryptoContext3->Enable(ADVANCEDSHE);
+    int slotTotal = cryptoContext1->GetRingDimension();
+    
+    // std::cout << "Ring dimension N: " << cryptoContext1->GetRingDimension() << std::endl;
 
     // std::cout << "Plaintext modulus p = " << cryptoContext1->GetCryptoParameters()->GetPlaintextModulus() << std::endl;
     // std::cout << "Cyclotomic order n = " << cryptoContext1->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder() / 2 << std::endl;
@@ -158,41 +156,40 @@ int main(int argc, char* argv[]) {
     // userInputs.push_back({1, 3, 4, 0, 2, 5});
     // userInputs.push_back({3, 1, 2, 0, 4, 5});
     // userInputs.push_back({3, 1, 2, 0, 4, 5});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5});
     
     // Required depth: 9.
-    userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9});
-    userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9});
-    userInputs.push_back({4, 1, 0, 2, 3, 5, 6, 7, 8, 9});
-    userInputs.push_back({1, 3, 4, 0, 2, 5, 6, 7, 8, 9});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
+    // userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9});
+    // userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9});
+    // userInputs.push_back({4, 1, 0, 2, 3, 5, 6, 7, 8, 9});
+    // userInputs.push_back({1, 3, 4, 0, 2, 5, 6, 7, 8, 9});
+    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
+    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
+    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
+    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
+    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
+    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
 
     // Required depth: 10.
-    // userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({4, 1, 0, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({1, 3, 4, 0, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({4, 1, 0, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({1, 3, 4, 0, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
 
     int n = userInputs.size();
 
@@ -206,6 +203,8 @@ int main(int argc, char* argv[]) {
     std::vector<std::vector<std::vector<int64_t>>> userPrefTransposedList;
     std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefList;             
     std::vector<std::vector<Ciphertext<DCRTPoly>>> encUserPrefTransposedList;   
+
+    // TODO: move permutation matrix computation to helper function.
 
     int k_ceil = std::ceil(std::log2(n));
     int slotsPadded = std::pow(2,k_ceil);
@@ -222,8 +221,11 @@ int main(int argc, char* argv[]) {
         std::vector<std::vector<int64_t>> userPrefMatrixTransposed;
         std::vector<int64_t> zeroRow(n,0);
         for (int row=0; row < n; ++row) { userPrefMatrixTransposed.push_back(zeroRow); }
-        for (int row=0; row < n; ++row) { for (int col=0; col < n; ++col) {
-            userPrefMatrixTransposed[col][row] = userPrefMatrix[row][col]; }}
+        for (int row=0; row < n; ++row) { 
+            for (int col=0; col < n; ++col) {
+                userPrefMatrixTransposed[col][row] = userPrefMatrix[row][col]; 
+            }
+        }
         userPrefTransposedList.push_back(userPrefMatrixTransposed);
         // For packing mode 1: row-wise encryption of each permutation matrix.
         std::vector<Ciphertext<DCRTPoly>> encUserPref;
@@ -253,16 +255,41 @@ int main(int argc, char* argv[]) {
                                   cryptoContext1->MakePackedPlaintext(userPrefPacked));
     auto encUserPrefTransPacked = cryptoContext1->Encrypt(keyPair.publicKey,
                                   cryptoContext1->MakePackedPlaintext(userPrefTransposedPacked));
+    // For packing mode 3: 
+    // Build diagonals of pref permutation matrix diagonals.
+    std::vector<std::vector<std::vector<int64_t>>> usersPrefMatrixDiagonals;
+    std::vector<std::vector<std::vector<int64_t>>> usersPrefMatrixTransposedDiagonals;
+    for (int user=0; user<n ; ++user){ 
+        usersPrefMatrixDiagonals.push_back(matrixDiagonals(userPrefList[user]));
+        usersPrefMatrixTransposedDiagonals.push_back(matrixDiagonals(userPrefTransposedList[user]));
+    }
+    // Encrypt diagonals of pref permutation matrix diagonals.
+    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUsersPrefMatrixDiagonals; 
+    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUsersPrefMatrixTransposedDiagonals;
+    std::vector<int64_t> zeroVec(n,0);
+    for (int user=0; user<n ; ++user){ 
+        std::vector<Ciphertext<DCRTPoly>> usersPrefDiagonal;
+        std::vector<Ciphertext<DCRTPoly>> usersPrefTransposedDiagonal;
+        for (int l=0; l<n ; ++l){ 
+            usersPrefDiagonal.push_back(cryptoContext1->Encrypt(keyPair.publicKey,
+                                       cryptoContext1->MakePackedPlaintext(repFillSlots(usersPrefMatrixDiagonals[user][l],slotTotal))));
+            usersPrefTransposedDiagonal.push_back(cryptoContext1->Encrypt(keyPair.publicKey,
+                                                 cryptoContext1->MakePackedPlaintext(repFillSlots(usersPrefMatrixTransposedDiagonals[user][l],slotTotal))));
+        }
+        encUsersPrefMatrixDiagonals.push_back(usersPrefDiagonal);
+        encUsersPrefMatrixTransposedDiagonals.push_back(usersPrefTransposedDiagonal);
+    }
 
     // Offline: Init objects.
     // -----------------------------------------------------------------------
-    InitRotsMasks initRotsMasks(cryptoContext1,keyPair,n);
-    InitNotEqualZero initNotEqualZero(cryptoContext1,keyPair,n,userInputs.size()); // TODO: Over packed ciphertexts?
+    InitRotsMasks initRotsMasks(cryptoContext1,keyPair,n); // TODO: Take as input test mode.
+    InitNotEqualZero initNotEqualZero(cryptoContext1,keyPair,n,userInputs.size()); 
     InitPreserveLeadOne initPreserveLeadOne(cryptoContext1,keyPair,n);
-    
+    InitMatrixMult initMatrixMult(cryptoContext1,keyPair,n); // n as dimension of nxn adjacencey matrix.
+
     // Offline: Initialize encrypted constants.
     // -----------------------------------------------------------------------
-    auto slotTotal = cryptoContext1->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder()/2;
+
     // TODO: move to initialization class.
     std::vector<int64_t> zeros(slotTotal,0);
     std::vector<int64_t> range; for (int i=0; i<n; ++i) { range.push_back(i+1); } // TODO: not suited for packing.
@@ -272,50 +299,40 @@ int main(int argc, char* argv[]) {
         for (int elem = 0; elem <slotsPadded-n; elem++){ ones.push_back(0); negOnes.push_back(0); }
      }
     auto encZeros = cryptoContext1->Encrypt(keyPair.publicKey,
-                                           cryptoContext1->MakePackedPlaintext(zeros));
+                                            cryptoContext1->MakePackedPlaintext(zeros));
     auto encOnes = cryptoContext1->Encrypt(keyPair.publicKey,
-                                          cryptoContext1->MakePackedPlaintext(ones));
+                                           cryptoContext1->MakePackedPlaintext(ones));
     auto encNegOnes = cryptoContext1->Encrypt(keyPair.publicKey,
                                              cryptoContext1->MakePackedPlaintext(negOnes));
     auto encRange = cryptoContext1->Encrypt(keyPair.publicKey,
                                            cryptoContext1->MakePackedPlaintext(range));
-
-
-    //==========================================================
-    // Runtime test for single operations.
-    //==========================================================
-
-    // auto res = encRange;
-    // auto rotDegree = std::pow(2,10);
-    // for (int i = 0; i<chosen_depth1; ++i){
-    //     std::cout << "Depth: " << i << std::endl;
-    //     TIC(t); res = cryptoContext1->EvalRotate(res, rotDegree);
-    //     processingTime = TOC(t);
-    //     std::cout << "Rotation: " << processingTime << "ms" << std::endl;
-    //     TIC(t); res = cryptoContext1->EvalMult(res,res);
-    //     cryptoContext1->ModReduceInPlace(res);
-    //     processingTime = TOC(t);
-    //     std::cout << "Multiplication: " << processingTime << "ms" << std::endl;
-    // }
-    // return 0;
-
+    std::vector<int64_t> onesFlat(slotTotal,1);
+    std::vector<int64_t> onesRow(n,1);
+    auto encOnesFlat = cryptoContext1->Encrypt(keyPair.publicKey,
+                                               cryptoContext1->MakePackedPlaintext(onesFlat));
+    auto encOnesRow = cryptoContext1->Encrypt(keyPair.publicKey,
+                                              cryptoContext1->MakePackedPlaintext(onesRow));
 
     //==========================================================
     // Online phase.
     //==========================================================
 
-    // 1: Row/Col-wise matrix packing
-    // 2: Full matrix packing
-    int packingMode = 2;
-
-    // Init output ciphertext.
-    auto enc_output = encZeros; 
-    auto encUserAvailability = encOnes; 
-
-    // Log crypto operations.
+    // Global: Log crypto operations.
     CryptoOpsLogger cryptoOpsLogger;
+    // double runTimeRound(0.0); // TODO: implement.
 
-    // Loop over all rounds.
+    // Global: init output ciphertext.
+    auto enc_output = encZeros; 
+    Ciphertext<DCRTPoly> encUserAvailability;
+    if (packingMode == 1 || packingMode == 2) {
+        encUserAvailability = encOnes; 
+    }
+    else if (packingMode == 3) {
+        encUserAvailability = encOnesFlat;
+    }
+    else { return 0; }
+
+    // Main loop for cycle finding algorithm.
     for (int i = 0; i < n ; ++i)
     {
         std::cout << "-------------" << std::endl;
@@ -326,7 +343,9 @@ int main(int argc, char* argv[]) {
         // (1) Update adjacency matix.
         //----------------------------------------------------------
 
+        // Global: Row-wise packed adjacency matrix (test mode 1,2).
         std::vector<Ciphertext<DCRTPoly>> encRowsAdjMatrix;
+        // Global: Flat packed adjacency matrix (test mode 3).
         Ciphertext<DCRTPoly> encAdjMatrixPacked;
 
         // Begin: Timer.
@@ -336,7 +355,6 @@ int main(int argc, char* argv[]) {
                 auto encUserAvailablePref = evalMatrixVecMult(encUserPrefList[user], encUserAvailability,
                                                               cryptoContext1, initRotsMasks); // 2 mult-depth
                 auto encUserFirstAvailablePref = evalPreserveLeadOne(encUserAvailablePref, cryptoContext1, initPreserveLeadOne); // 2+log(n) mult-depth
-                // TODO: extract rows in refresh.
                 encRowsAdjMatrix.push_back(evalMatrixVecMult(encUserPrefTransposedList[user], encUserFirstAvailablePref,
                                                              cryptoContext1, initRotsMasks)); // 2 mult-depth
             }
@@ -360,6 +378,7 @@ int main(int argc, char* argv[]) {
                 encAvailPrefElems.push_back(encElemsRow);
             }
             // Repack into single ciphertext (for later matrix multiplication).
+            // TODO: requires padding between as well?
             // padded(user1AvailPref) ... | padded(user2AvailPref)| ... | padded(user3AvailPref) | ... (each repeated 2^ceil(log(n)) times)
             std::vector<Ciphertext<DCRTPoly>> encAvailPrefContainer;
             for (int user = 0; user < n; user++){
@@ -376,29 +395,47 @@ int main(int argc, char* argv[]) {
             } 
             // Preserve leading One.
             auto encFirstAvailPrefPacked = evalPreserveLeadOne(encRepAvailRows, cryptoContext1, initPreserveLeadOne); // 2+log(n) mult-depth
-
             // Preferred available  * Transposed Preference Matrices
             auto encResMult2 = cryptoContext1->EvalMult(encFirstAvailPrefPacked,encUserPrefTransPacked); 
             encAdjMatrixPacked = evalPrefixAdd(encResMult2,slotsPadded,cryptoContext1);
         }
+        else if (packingMode == 3){
+            for (int user = 0; user < n; ++user){
+                auto encUserAvailablePref = evalDiagMatrixVecMult(encUsersPrefMatrixDiagonals[user], encUserAvailability,
+                                                                  cryptoContext1, initRotsMasks); // 1 mult-depth                                                  
+                auto encUserFirstAvailablePref = evalPreserveLeadOne(encUserAvailablePref, cryptoContext1, initPreserveLeadOne); // 2+log(n) mult-depth
+                // Mask and replicate availability row left and right.
+                encUserFirstAvailablePref = cryptoContext1->EvalMult(encUserFirstAvailablePref,encOnesRow); // 1 mult-depth
+                std::vector<Ciphertext<DCRTPoly>> addContainer;
+                addContainer.push_back(encUserFirstAvailablePref);
+                addContainer.push_back(cryptoContext1->EvalRotate(encUserFirstAvailablePref,-n));
+                addContainer.push_back(cryptoContext1->EvalRotate(encUserFirstAvailablePref,n));
+                encUserFirstAvailablePref = cryptoContext1->EvalAddMany(addContainer);
+                encRowsAdjMatrix.push_back(evalDiagMatrixVecMult(encUsersPrefMatrixTransposedDiagonals[user], encUserFirstAvailablePref,
+                                                                 cryptoContext1, initRotsMasks)); // 1 mult-depth
+            }
+        }
         else { return 1; }
-        processingTime = TOC(t);    // End: Timer.
+        processingTime = TOC(t); // End: Timer.
         std::cout << "Online part 1 - Adjacency matrix update time: " << processingTime << "ms" << std::endl;
 
         // Refresh after phase (1).
         //----------------------------------------------------------
         std::cout << "Adjacency Matrix: " << std::endl;
-        std::vector<std::vector<Ciphertext<DCRTPoly>>> encAdjMatrixElems;
+        // Global: Element-wise packed adjacency matrix input to matrix exponentiation in modes 1,2.
+        std::vector<std::vector<Ciphertext<DCRTPoly>>> encAdjMatrixElems; 
+        // Global: Flat packed adjacency matrix input to matrix exponentiation in modes 3.
+        Ciphertext<DCRTPoly> encAdjMatrixFlat; 
         if (packingMode == 1){
+            // Refresh "encRowsAdjMatrix" in row form, also used as input to phase (3).
             for (int row=0; row < n; ++row){
                 Plaintext plaintext;
                 cryptoContext1->Decrypt(keyPair.secretKey, encRowsAdjMatrix[row], &plaintext); 
                 plaintext->SetLength(n); auto payload = plaintext->GetPackedValue();
-                // Print adjacence matrix.
+                // Print adjacency matrix.
                 std::cout << payload << std::endl;
                 // Refresh row-wise encrypted ciphertexts.
                 encAdjMatrixElems.push_back(refreshElems(encRowsAdjMatrix[row],n,keyPair,cryptoContext1));
-                // WIP: for step 3, refresh adjacency matrix ciphertext in row form.
                 refreshInPlace(encRowsAdjMatrix[row],n,keyPair,cryptoContext1); 
             }
         }
@@ -406,7 +443,7 @@ int main(int argc, char* argv[]) {
             Plaintext plaintext;
             cryptoContext1->Decrypt(keyPair.secretKey,encAdjMatrixPacked,&plaintext); 
             plaintext->SetLength(slotsPadded*slotsPadded*n); auto payload = plaintext->GetPackedValue();
-            // For phase 2, refresh adjacency matrix and output element wise encryptions.
+            // (1) Refresh encryption of packed matrix "encAdjMatrixPacked" as encrypted matrix elements.
             encRowsAdjMatrix.clear();
             for (int row=0; row < n; ++row){
                 std::vector<int64_t> adjMatrixRow;
@@ -421,12 +458,35 @@ int main(int argc, char* argv[]) {
                 encAdjMatrixElems.push_back(encAdjMatrixRow);
                 // Print adjacency matrix.
                 std::cout << adjMatrixRow << std::endl; 
-                // WIP: for phase 3, refresh adjacency matrix ciphertext in row form.
+                // (2) Also refresh "encRowsAdjMatrix" in row form for phase (3).
                 encRowsAdjMatrix.push_back(cryptoContext1->Encrypt(keyPair.publicKey,
                                            cryptoContext1->MakePackedPlaintext(adjMatrixRow)));
             }
         }
+        else if (packingMode == 3){
+            // (1) Refresh "encRowsAdjMatrix" as encrypted flat packed matrix.
+            std::vector<std::vector<int64_t>> rowsAdjMatrix;
+            for (int row=0; row < n; ++row){
+                Plaintext plaintext;
+                cryptoContext1->Decrypt(keyPair.secretKey, encRowsAdjMatrix[row], &plaintext); 
+                plaintext->SetLength(n); auto payload = plaintext->GetPackedValue();
+                // Print adjacence matrix.
+                std::cout << payload << std::endl;
+                rowsAdjMatrix.push_back(payload);
+                // (2) Also refresh "encRowsAdjMatrix" in row form for phase (3).
+                refreshInPlace(encRowsAdjMatrix[row],n,keyPair,cryptoContext1); 
+            }
+            std::vector<int64_t> flatMatrix(n*n,0);
+            for (int row=0; row < n; ++row){
+                for (int col=0; col < n; ++col){
+                    flatMatrix[row*n+col] = rowsAdjMatrix[row][col];
+                }
+            }
+            encAdjMatrixFlat = cryptoContext1->Encrypt(keyPair.publicKey,
+                                                       cryptoContext1->MakePackedPlaintext(repFillSlots(flatMatrix,slotTotal)));            
+        }
         else { return 1; }
+
 
         //----------------------------------------------------------
         // (2) Cycle finding.
@@ -434,29 +494,54 @@ int main(int argc, char* argv[]) {
 
         // 2a) Matrix exponentiation.
         //----------------------------------------------------------
-        // Cycle finding result [res_1, ..., res_n]. On cycle, res_i = 1. Not on cycle: res_i = 0.
-        std::vector<std::vector<Ciphertext<DCRTPoly>>> encMatrixExpElems; 
-
-        TIC(t);
+        // Cycle finding result [r_1, ..., r_n]. On cycle, r_i = 1. Not on cycle: r_i = 0.
+        std::vector<std::vector<Ciphertext<DCRTPoly>>> encMatrixExpElems; // Output in mode 1,2.
+        Ciphertext<DCRTPoly> encMatrixExpFlat; // Output in mode 3.
+        double processingTime2a(0.0);
         if (packingMode == 1){
+             TIC(t);
             // No packing (mode 0), Row/Col matrix packing (mode 1), Full matrix packing (mode 2) 
             encMatrixExpElems = evalMatSqMul(encAdjMatrixElems,n,
                                              1, // Packing mode.
                                              cryptoContext1,initRotsMasks,cryptoOpsLogger,keyPair); // TODO: keypair param for debugging
+            processingTime2a = TOC(t);
         }
         else if (packingMode == 2) {
+            TIC(t);
             encMatrixExpElems = evalMatSqMul(encAdjMatrixElems,n,
                                              2, // Packing mode.
                                              cryptoContext1,initRotsMasks,cryptoOpsLogger,keyPair); // TODO: keypair param for debugging, remove later.   
-        }       
+            processingTime2a = TOC(t);
+        } 
+        else if (packingMode == 3) {
+            // Required squarings.
+            bool contFlag = true; int sqs = 1;
+            while (contFlag) {
+                int exp = 2 * sqs;
+                if (exp >= n) { contFlag = false; }
+                else { sqs = sqs + 1; }
+            }
+            // Perform squarings, refresh every 3 squarings (each of d-mult. depth)
+            TIC(t);
+            encMatrixExpFlat = encAdjMatrixFlat;
+            for (int i=1; i <= sqs; i++){
+                encMatrixExpFlat = evalMatrixMult(cryptoContext1,encMatrixExpFlat,encMatrixExpFlat,initMatrixMult,keyPair); // TODO: keyPair for debugging only.
+                if (i % 3 == 0) {
+                    processingTime2a += TOC(t);
+                    refreshInPlace(encMatrixExpFlat,cryptoContext1->GetRingDimension(),keyPair,cryptoContext1);
+                    TIC(t);
+                }
+            }
+            processingTime2a += TOC(t);
+        }      
         else { return 1; }
         processingTime = TOC(t);
-        std::cout << "Online part 2a - Matrix exponentiation: " << processingTime << " ms" << std::endl;
+        std::cout << "Online part 2a - Matrix exponentiation: " << processingTime2a << " ms" << std::endl;
 
         // Refresh after phase (2a)
         //----------------------------------------------------------
         std::vector<Ciphertext<DCRTPoly>> encMatrixExp; // Refreshed & repacked output in packing mode 1.
-        Ciphertext<DCRTPoly> encMatrixExpPacked;        // Refreshed & repacked output in packing mode 2.
+        Ciphertext<DCRTPoly> encMatrixExpPacked;        // Refreshed & repacked output in packing mode 2/3.
 
         if (packingMode == 1){
             // TODO: perform this elem to column transform in refresh.
@@ -481,6 +566,24 @@ int main(int argc, char* argv[]) {
             encMatrixExpPacked = cryptoContext1->Encrypt(keyPair.publicKey,
                                  cryptoContext1->MakePackedPlaintext(packedMatrix));   
         }
+        else if (packingMode == 3) {
+            // Refresh and repack ciphertexts
+            // packed(col1) | packed(col2) | packed(col3) ...     
+            std::vector<int64_t> packedMatrix(slotsPadded*n,0);
+            // Decrypt exp. matrix which is flat encoded.
+            Plaintext plaintext;
+            cryptoContext1->Decrypt(keyPair.secretKey,encMatrixExpFlat,&plaintext); 
+            plaintext->SetLength(n*n); auto payload = plaintext->GetPackedValue();
+            for (int row = 0; row < n; row++){
+                std::vector<int64_t> matrixElemsRow;
+                for (int col = 0; col < n; col++){
+                    int pos = col*slotsPadded + row;
+                    packedMatrix[pos] = payload[row*n+col];
+                }
+            }
+            encMatrixExpPacked = cryptoContext1->Encrypt(keyPair.publicKey,
+                                 cryptoContext1->MakePackedPlaintext(packedMatrix));   
+        }
         else { return 1; }
 
         // 2b) Cycle computation.
@@ -493,7 +596,7 @@ int main(int argc, char* argv[]) {
             enc_u = evalVecMatrixMult(encOnes,encMatrixExp,cryptoContext1,initRotsMasks,cryptoOpsLogger); 
             enc_u = evalNotEqualZero(enc_u,cryptoContext1,initNotEqualZero); 
         }
-        else if (packingMode == 2) {
+        else if (packingMode == 2 || packingMode == 3) {
             // packed(col1) | packed(col2) | packed(col3) ...     
             // packed(ones) | packed(ones) | packed(ones) ...
             auto encResMult = cryptoContext1->EvalMult(encMatrixExpPacked,encOnes); 
@@ -511,7 +614,7 @@ int main(int argc, char* argv[]) {
             refreshInPlace(enc_u,n,keyPair, cryptoContext1); 
         }
         // Refresh and extract resulting slot values.
-        else if (packingMode == 2) {
+        else if (packingMode == 2 || packingMode == 3) {
             // Generate fresh encryption of [ u_1 | u_2 | ... | u_n ... ] (replicated in packed fashion)
             Plaintext plaintext;
             cryptoContext1->Decrypt(keyPair.secretKey,enc_u_unmasked,&plaintext); 
@@ -535,7 +638,7 @@ int main(int argc, char* argv[]) {
         for (int user=0; user < n; ++user){ // TODO: Implement with full packing.
             // Note: encRowsAdjMatrix must be refreshed after (1)
             auto enc_t_user = cryptoContext1->EvalInnerProduct(encRowsAdjMatrix[user], encRange, 
-                                                              encRowsAdjMatrix.size());
+                                                               encRowsAdjMatrix.size());
             enc_t_user = cryptoContext1->EvalMult(enc_t_user, initRotsMasks.encMasks()[0]); 
             cryptoContext1->ModReduceInPlace(enc_t_user);
             enc_elements.push_back(cryptoContext1->EvalRotate(enc_t_user,-user));
@@ -577,6 +680,20 @@ int main(int argc, char* argv[]) {
             }
             encUserAvailability = cryptoContext1->Encrypt(keyPair.publicKey,
                                                          cryptoContext1->MakePackedPlaintext(fullyPackedPlaintext));            
+        }
+        else if (packingMode == 3) {
+            // Refresh encrypted output vector.
+            Plaintext plaintext; cryptoContext1->Decrypt(keyPair.secretKey, enc_output, &plaintext); 
+            plaintext->SetLength(n); auto output = plaintext->GetPackedValue();
+            std::cout << "Output vector: " << output << std::endl;
+            enc_output = cryptoContext1->Encrypt(keyPair.publicKey,
+                                                cryptoContext1->MakePackedPlaintext(output));       
+            // For packing mode 3: Refresh & pack copies of user availability vector into single ciphertext.
+            cryptoContext1->Decrypt(keyPair.secretKey, encUserAvailability, &plaintext); 
+            plaintext->SetLength(n); auto userAvailability = plaintext->GetPackedValue();
+            std::cout << "Availability vector: " << userAvailability << std::endl;
+            encUserAvailability = cryptoContext1->Encrypt(keyPair.publicKey,
+                                                          cryptoContext1->MakePackedPlaintext(repFillSlots(userAvailability,slotTotal)));            
         }
         else { return 1; }
 

@@ -11,6 +11,7 @@ void printEnc(Ciphertext<DCRTPoly> &ciphertext, int slots, CryptoContext<DCRTPol
 void printEncMatRows(std::vector<Ciphertext<DCRTPoly>> &encMatRows, CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair);
 void printEncMatElems(std::vector<std::vector<Ciphertext<DCRTPoly>>> &encMatElems, CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair);
 
+std::vector<std::vector<int64_t>> matrixDiagonals(std::vector<std::vector<int64_t>> matIn); 
 
 // Class initializes rotation keys and encrypted masks.
 class InitRotsMasks {

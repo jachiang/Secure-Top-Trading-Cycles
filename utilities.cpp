@@ -22,6 +22,35 @@ int modInverse(int A, int M)
     return (x % M + M) % M; 
 }
 
+
+std::vector<int64_t> repFillSlots(std::vector<int64_t> vecIn, int maxSlots)
+{
+    int n = vecIn.size();
+    std::vector<int64_t> resVec(maxSlots,0);
+    int halfSlots = std::floor(maxSlots/2);
+    int repNum = std::floor(halfSlots/n);
+    for (int slot = 0; slot < repNum*n; slot++){
+        resVec[slot] = vecIn[slot%n];
+        resVec[maxSlots-repNum*n+slot] = vecIn[slot%n];
+    }
+    // for (int slot = maxSlots-repNum*n; slot < maxSlots; slot++){
+    //     resVec[slot] = vecIn[slot%n];
+    // }
+    return resVec;
+}
+
+std::vector<std::vector<int64_t>> matrixDiagonals(std::vector<std::vector<int64_t>> matIn) 
+{
+    int d = matIn.size();
+    std::vector<std::vector<int64_t>> diagonals;
+    for (int l=0;l<d;l++){
+        std::vector<int64_t> diagonal(d,0);
+        for (int i=0;i<d;i++){diagonal[i] =  matIn[i][(l+i)%d];}
+        diagonals.push_back(diagonal);
+    }
+    return diagonals;
+}
+
 CryptoOpsLogger::CryptoOpsLogger() : innerProdOps_(0), innerProdTime_(0.0), 
                                      addManyOps_(0), addManyTime_(0.0),
                                      multOps_(0), multTime_(0.0), 

@@ -6,10 +6,33 @@
 #include "crypto_utilities.h"
 #include "crypto_enc_transform.h"
 #include "crypto_prefix_mult.h"
+#include <map>
 
 using namespace lbcrypto;
 
+// Class initializes rotation keys and encrypted masks.
+class InitMatrixMult {
+public:
+    InitMatrixMult(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int d);
+    std::map<int, Ciphertext<DCRTPoly>> u_sigma();
+    std::map<int, Ciphertext<DCRTPoly>> u_tau();
+    std::map<int, Ciphertext<DCRTPoly>> v1();
+    std::map<int, Ciphertext<DCRTPoly>> v2();
+    Ciphertext<DCRTPoly> matrixMask();
+    const int d;
+private:
+    std::map<int, Ciphertext<DCRTPoly>> _u_sigma;
+    std::map<int, Ciphertext<DCRTPoly>> _u_tau;
+    std::map<int, Ciphertext<DCRTPoly>> _v1;
+    std::map<int, Ciphertext<DCRTPoly>> _v2;
+    Ciphertext<DCRTPoly> _matrixMask;
+};
 
+Ciphertext<DCRTPoly> evalMatrixMult(CryptoContext<DCRTPoly> &cryptoContext, 
+                                    Ciphertext<DCRTPoly> encA,
+                                    Ciphertext<DCRTPoly> encB,
+                                    InitMatrixMult &initMatrixMult,
+                                    KeyPair<DCRTPoly> &keyPair); // TODO: keypair for debugging.
 
 std::vector<std::vector<Ciphertext<DCRTPoly>>> // Element-wise-encrypted output matrix.
     evalMatrixMul2Pow(std::vector<std::vector<std::vector<Ciphertext<DCRTPoly>>>> &encMatsElems, // Elem-wise encrypted input matrices.
@@ -43,6 +66,11 @@ std::vector<Ciphertext<DCRTPoly>> evalMatrixExp(std::vector<Ciphertext<DCRTPoly>
                                                 CryptoContext<DCRTPoly> &cryptoContext,
                                                 InitRotsMasks &initRotsMasks,
                                                 CryptoOpsLogger &CryptoOpsLogger); 
+
+Ciphertext<DCRTPoly> evalDiagMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &encMatDiagonals, // Must be filled.
+                                           Ciphertext<DCRTPoly> encVec,                        // Must be filled.
+                                           CryptoContext<DCRTPoly> &cryptoContext,            
+                                           InitRotsMasks &initRotsMasks); 
 
 Ciphertext<DCRTPoly> evalMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &encRows, 
                                        Ciphertext<DCRTPoly> &enc_vec,
