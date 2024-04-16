@@ -597,11 +597,11 @@ int main(int argc, char* argv[]) {
             enc_u = evalNotEqualZero(enc_u,cryptoContext1,initNotEqualZero); 
         }
         else if (packingMode == 2 || packingMode == 3) {
+            // Pure SIMD batch operations.
             // packed(col1) | packed(col2) | packed(col3) ...     
             // packed(ones) | packed(ones) | packed(ones) ...
             auto encResMult = cryptoContext1->EvalMult(encMatrixExpPacked,encOnes); 
             auto encResInnerProd = evalPrefixAdd(encResMult,slotsPadded,cryptoContext1);      
-            // Not equal zero (SIMD operation).
             enc_u_unmasked = evalNotEqualZero(encResInnerProd,cryptoContext1,initNotEqualZero); 
         }
         else { return 1; }
@@ -613,15 +613,14 @@ int main(int argc, char* argv[]) {
         if (packingMode == 1){
             refreshInPlace(enc_u,n,keyPair, cryptoContext1); 
         }
-        // Refresh and extract resulting slot values.
         else if (packingMode == 2 || packingMode == 3) {
-            // Generate fresh encryption of [ u_1 | u_2 | ... | u_n ... ] (replicated in packed fashion)
+            // Generate fresh encryption of [ u_1 | u_2 | ... | u_n ... ].
             Plaintext plaintext;
             cryptoContext1->Decrypt(keyPair.secretKey,enc_u_unmasked,&plaintext); 
             plaintext->SetLength(n*slotsPadded); auto payload = plaintext->GetPackedValue();
             std::vector<int64_t> uElems;
             for (int user = 0; user < n; user++){
-                uElems.push_back(payload[user*slotsPadded]); // TODO: Pack this for phase 3.
+                uElems.push_back(payload[user*slotsPadded]);
             }
             enc_u = cryptoContext1->Encrypt(keyPair.publicKey,
                     cryptoContext1->MakePackedPlaintext(uElems));    
@@ -635,7 +634,7 @@ int main(int argc, char* argv[]) {
         TIC(t); // Begin: Timer.
         // Compute current preference index (t) for all users in packed ciphertext.
         std::vector<Ciphertext<DCRTPoly>> enc_elements;
-        for (int user=0; user < n; ++user){ // TODO: Implement with full packing.
+        for (int user=0; user < n; ++user){
             // Note: encRowsAdjMatrix must be refreshed after (1)
             auto enc_t_user = cryptoContext1->EvalInnerProduct(encRowsAdjMatrix[user], encRange, 
                                                                encRowsAdjMatrix.size());
@@ -660,15 +659,14 @@ int main(int argc, char* argv[]) {
         
         // Refresh after phase (3).
         //----------------------------------------------------------
-        // refreshInPlace(enc_output,n,keyPair, cryptoContext1);
         if (packingMode == 1 || packingMode == 2) {
-            // Refresh encrypted output vector.
+            // (1) Refresh encrypted output vector.
             Plaintext plaintext; cryptoContext1->Decrypt(keyPair.secretKey, enc_output, &plaintext); 
             plaintext->SetLength(n); auto output = plaintext->GetPackedValue();
             std::cout << "Output vector: " << output << std::endl;
             enc_output = cryptoContext1->Encrypt(keyPair.publicKey,
                                                 cryptoContext1->MakePackedPlaintext(output));       
-            // For packing mode 2: Refresh & pack copies of user availability vector into single ciphertext.
+            // (2) For test mode 2: Refresh & pack copies of user availability vector into single ciphertext.
             cryptoContext1->Decrypt(keyPair.secretKey, encUserAvailability, &plaintext); 
             plaintext->SetLength(n); auto userAvailability = plaintext->GetPackedValue();
             std::cout << "Availability vector: " << userAvailability << std::endl;
@@ -682,13 +680,13 @@ int main(int argc, char* argv[]) {
                                                          cryptoContext1->MakePackedPlaintext(fullyPackedPlaintext));            
         }
         else if (packingMode == 3) {
-            // Refresh encrypted output vector.
+            // (1) Refresh encrypted output vector.
             Plaintext plaintext; cryptoContext1->Decrypt(keyPair.secretKey, enc_output, &plaintext); 
             plaintext->SetLength(n); auto output = plaintext->GetPackedValue();
             std::cout << "Output vector: " << output << std::endl;
             enc_output = cryptoContext1->Encrypt(keyPair.publicKey,
                                                 cryptoContext1->MakePackedPlaintext(output));       
-            // For packing mode 3: Refresh & pack copies of user availability vector into single ciphertext.
+            // (2) For test mode 3: Refresh & pack copies of user availability vector into single ciphertext.
             cryptoContext1->Decrypt(keyPair.secretKey, encUserAvailability, &plaintext); 
             plaintext->SetLength(n); auto userAvailability = plaintext->GetPackedValue();
             std::cout << "Availability vector: " << userAvailability << std::endl;

@@ -33,9 +33,6 @@ std::vector<int64_t> repFillSlots(std::vector<int64_t> vecIn, int maxSlots)
         resVec[slot] = vecIn[slot%n];
         resVec[maxSlots-repNum*n+slot] = vecIn[slot%n];
     }
-    // for (int slot = maxSlots-repNum*n; slot < maxSlots; slot++){
-    //     resVec[slot] = vecIn[slot%n];
-    // }
     return resVec;
 }
 
