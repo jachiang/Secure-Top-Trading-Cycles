@@ -402,7 +402,7 @@ int main(int argc, char* argv[]) {
         else if (packingMode == 3){
             for (int user = 0; user < n; ++user){
                 auto encUserAvailablePref = evalDiagMatrixVecMult(encUsersPrefMatrixDiagonals[user], encUserAvailability,
-                                                                  cryptoContext1, initRotsMasks); // 1 mult-depth                                                  
+                                                                  cryptoContext1, initRotsMasks, cryptoOpsLogger); // 1 mult-depth                                                  
                 auto encUserFirstAvailablePref = evalPreserveLeadOne(encUserAvailablePref, cryptoContext1, initPreserveLeadOne); // 2+log(n) mult-depth
                 // Mask and replicate availability row left and right.
                 encUserFirstAvailablePref = cryptoContext1->EvalMult(encUserFirstAvailablePref,encOnesRow); // 1 mult-depth
@@ -412,7 +412,7 @@ int main(int argc, char* argv[]) {
                 addContainer.push_back(cryptoContext1->EvalRotate(encUserFirstAvailablePref,n));
                 encUserFirstAvailablePref = cryptoContext1->EvalAddMany(addContainer);
                 encRowsAdjMatrix.push_back(evalDiagMatrixVecMult(encUsersPrefMatrixTransposedDiagonals[user], encUserFirstAvailablePref,
-                                                                 cryptoContext1, initRotsMasks)); // 1 mult-depth
+                                                                 cryptoContext1, initRotsMasks, cryptoOpsLogger)); // 1 mult-depth
             }
         }
         else { return 1; }
