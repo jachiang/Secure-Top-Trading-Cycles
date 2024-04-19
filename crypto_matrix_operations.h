@@ -70,7 +70,7 @@ std::vector<Ciphertext<DCRTPoly>> evalMatrixExp(std::vector<Ciphertext<DCRTPoly>
 Ciphertext<DCRTPoly> evalDiagMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &encMatDiagonals, // Must be filled.
                                            Ciphertext<DCRTPoly> encVec,                        // Must be filled.
                                            CryptoContext<DCRTPoly> &cryptoContext,            
-                                           InitRotsMasks &initRotsMasks); 
+                                           CryptoOpsLogger &cryptoOpsLogger); 
 
 Ciphertext<DCRTPoly> evalMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &encRows, 
                                        Ciphertext<DCRTPoly> &enc_vec,

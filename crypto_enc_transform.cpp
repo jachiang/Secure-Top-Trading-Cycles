@@ -37,10 +37,10 @@ std::vector<Ciphertext<DCRTPoly>> rowToColEnc(std::vector<Ciphertext<DCRTPoly>> 
     // Add all ciphertexts in each column container.
     std::vector<Ciphertext<DCRTPoly>> encCols; 
     for (int col=0 ; col < n ; ++col){ 
-        // Compute & log AddMany over ciphertexts.
-        TimeVar t; TIC(t);
-        encCols.push_back(cryptoContext->EvalAddMany(enc_col_container[col]));
-        cryptoOpsLogger.logAddMany(TOC(t));
+        TimeVar t; int len = enc_col_container[col].size();
+        TIC(t); auto res = cryptoContext->EvalAddMany(enc_col_container[col]); 
+        cryptoOpsLogger.logAddMany(len,TOC(t)); 
+        encCols.push_back(res);
     }   
     return encCols;
 }
@@ -67,10 +67,10 @@ std::vector<Ciphertext<DCRTPoly>> // Row-encrypted output matrix.
             encRowContainer.push_back(res);
         }
         // Compute & Log AddMany over ciphertexts..
-        TimeVar t; TIC(t);
-        auto res = cryptoContext->EvalAddMany(encRowContainer);
-        cryptoOpsLogger.logAddMany(TOC(t));
-        encMatRows.push_back(res);
+        TimeVar t; int len = encRowContainer.size();
+        TIC(t); auto encMatRow = cryptoContext->EvalAddMany(encRowContainer);
+        cryptoOpsLogger.logAddMany(len,TOC(t));
+        encMatRows.push_back(encMatRow);
     }
     return encMatRows;       
 }
@@ -96,10 +96,10 @@ std::vector<Ciphertext<DCRTPoly>> // Col-encrypted output matrix.
             cryptoOpsLogger.logRot(TOC(t));
         }
         // Compute & Log AddMany over ciphertexts.
-        TimeVar t; TIC(t);
-        auto res = cryptoContext->EvalAddMany(encColContainer);
-        cryptoOpsLogger.logAddMany(TOC(t));
-        encMatCols.push_back(res);
+        TimeVar t; int len = encColContainer.size();
+        TIC(t); auto encMatCol = cryptoContext->EvalAddMany(encColContainer);
+        cryptoOpsLogger.logAddMany(len,TOC(t));
+        encMatCols.push_back(encMatCol);
     }
     return encMatCols;
 }

@@ -67,6 +67,7 @@ InitMatrixMult::InitMatrixMult(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<D
     std::map<int, Ciphertext<DCRTPoly>> InitMatrixMult::v2() { return _v2; }
     Ciphertext<DCRTPoly> InitMatrixMult::matrixMask() { return _matrixMask; }
 
+
 Ciphertext<DCRTPoly> evalMatrixMult(CryptoContext<DCRTPoly> &cryptoContext, 
                                     Ciphertext<DCRTPoly> encA,
                                     Ciphertext<DCRTPoly> encB,
@@ -356,16 +357,20 @@ std::vector<std::vector<Ciphertext<DCRTPoly>>> evalMatSqMul(std::vector<std::vec
     }
 }
 
-Ciphertext<DCRTPoly> evalDiagMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &encMatDiagonals, // Must be filled.
-                                           Ciphertext<DCRTPoly> encVec,                        // Must be filled.
+Ciphertext<DCRTPoly> evalDiagMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &encMatDiagonals, // Output of repFillSlots()
+                                           Ciphertext<DCRTPoly> encVec,                        // Output of repFillSlots()
                                            CryptoContext<DCRTPoly> &cryptoContext,            
-                                           InitRotsMasks &initRotsMasks) {
+                                           CryptoOpsLogger &cryptoOpsLogger) {
+    TimeVar t;
     int d = encMatDiagonals.size();
     std::vector<Ciphertext<DCRTPoly>> addContainer;
     for (int l = 0; l < d; l++) {
-        addContainer.push_back(cryptoContext->EvalMult(encMatDiagonals[l],cryptoContext->EvalRotate(encVec,l)));
+        TIC(t); auto encVecRot = cryptoContext->EvalRotate(encVec,l);                       cryptoOpsLogger.logRot(TOC(t));
+        TIC(t); auto encVecRotMult = cryptoContext->EvalMult(encMatDiagonals[l],encVecRot); cryptoOpsLogger.logMult(TOC(t));
+        addContainer.push_back(encVecRotMult);
     }
-    return cryptoContext->EvalAddMany(addContainer);
+    TIC(t); auto res = cryptoContext->EvalAddMany(addContainer);                            cryptoOpsLogger.logAddMany(d,TOC(t));
+    return res;
 }
 
 Ciphertext<DCRTPoly> evalMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &encRows, 
