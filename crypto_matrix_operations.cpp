@@ -5,7 +5,7 @@
 InitMatrixMult::InitMatrixMult(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int d) :
     d(d) {
         auto maxSlots = cryptoContext->GetRingDimension();
-        auto n = std::pow(d,2);
+        auto n = d*d;
         // STEP 1-1
         std::vector<int> iterRange;
         for (int k = -d; k <= d; k++){ iterRange.push_back(k); }
@@ -50,11 +50,11 @@ InitMatrixMult::InitMatrixMult(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<D
                                              cryptoContext->MakePackedPlaintext(repFillSlots(v2_k_d,maxSlots)));                                           
         }
         // Generate rotation indices.
-        std::vector<int32_t> rotIndices;
-        for (int i = 1; i < n; i++){ 
-            rotIndices.push_back(i); rotIndices.push_back(-i);
-        }
-        cryptoContext->EvalRotateKeyGen(keyPair.secretKey,rotIndices);
+        // std::vector<int32_t> rotIndices;
+        // for (int i = 1; i < n; i++){ 
+        //     rotIndices.push_back(i); rotIndices.push_back(-i);
+        // }
+        // cryptoContext->EvalRotateKeyGen(keyPair.secretKey,rotIndices);
         // Mask to extract packed matrix.
         std::vector<int64_t> matrixMask(n,1);
         _matrixMask = cryptoContext->Encrypt(keyPair.publicKey,

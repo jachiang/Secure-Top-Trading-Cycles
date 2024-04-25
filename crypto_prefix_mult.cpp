@@ -83,24 +83,21 @@ InitPreserveLeadOne::InitPreserveLeadOne(CryptoContext<DCRTPoly> &cryptoContext,
     // Initialize prefix multiplication.
     // Generate encryption of masks. 
     // auto slotTotal = cryptoContext->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder()/2;
-    std::vector<int64_t> ones;
-    std::vector<int64_t> negOnes;
-    std::vector<int64_t> leadingOne;
+    std::vector<int64_t> ones(slots,1);
+    std::vector<int64_t> negOnes(slots,cryptoContext->GetCryptoParameters()->GetPlaintextModulus()-1);
+    std::vector<int64_t> leadingOne(slots,0); leadingOne[0]=1;
     // Pack nxn copies of n vectors.
-    int slotsPadded = std::pow(2, std::ceil(std::log2(slots)));
-    for (int copy = 0; copy<slotsPadded*slots; copy++){
-        for (int elem=0; elem<slots;elem++) {
-            ones.push_back(1); negOnes.push_back(cryptoContext->GetCryptoParameters()->GetPlaintextModulus()-1);
-        }
-        for (int elem=0; elem<slotsPadded-slots;elem++) {
-            ones.push_back(0); negOnes.push_back(0);
-        }
-        leadingOne.push_back(1);
-        for (int elem=0; elem<slotsPadded-1;elem++){ leadingOne.push_back(0); }
-    }
-    // std::vector<int64_t> ones(slotTotal,1);
-    // std::vector<int64_t> leadingOne(slotTotal,0); leadingOne[0] = 1;
-    // std::vector<int64_t> negOnes(slotTotal,cryptoContext->GetCryptoParameters()->GetPlaintextModulus()-1);
+    // int slotsPadded = std::pow(2, std::ceil(std::log2(slots)));
+    // for (int copy = 0; copy<slotsPadded*slots; copy++){
+    //     for (int elem=0; elem<slots;elem++) {
+    //         ones.push_back(1); negOnes.push_back(cryptoContext->GetCryptoParameters()->GetPlaintextModulus()-1);
+    //     }
+    //     for (int elem=0; elem<slotsPadded-slots;elem++) {
+    //         ones.push_back(0); negOnes.push_back(0);
+    //     }
+    //     leadingOne.push_back(1);
+    //     for (int elem=0; elem<slotsPadded-1;elem++){ leadingOne.push_back(0); }
+    // }
     encOnes_ = cryptoContext->Encrypt(keyPair.publicKey,
                                       cryptoContext->MakePackedPlaintext(ones));
     encNegOnes_ = cryptoContext->Encrypt(keyPair.publicKey,

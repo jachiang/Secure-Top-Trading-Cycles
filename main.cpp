@@ -72,12 +72,12 @@ int main(int argc, char* argv[]) {
     std::vector<std::vector<int64_t>> userInputs;
 
     // n = 5
-    userInputs.push_back({4, 1, 2, 3, 0});
-    userInputs.push_back({4, 3, 2, 1, 0});
-    userInputs.push_back({4, 1, 0, 2, 3});
-    userInputs.push_back({1, 3, 4, 0, 2});
-    userInputs.push_back({3, 1, 2, 0, 4});
-    int chosen_depth1 = 8;
+    // userInputs.push_back({4, 1, 2, 3, 0});
+    // userInputs.push_back({4, 3, 2, 1, 0});
+    // userInputs.push_back({4, 1, 0, 2, 3});
+    // userInputs.push_back({1, 3, 4, 0, 2});
+    // userInputs.push_back({3, 1, 2, 0, 4});
+    // int chosen_depth1 = 8;
 
     // n = 10
     // userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9});
@@ -134,32 +134,32 @@ int main(int argc, char* argv[]) {
     // int chosen_depth1 = 10;
 
     // n = 25
-    // userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({4, 1, 0, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({1, 3, 4, 0, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    // int chosen_depth1 = 10;
+    userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({4, 1, 0, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({1, 3, 4, 0, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+    int chosen_depth1 = 12;
 
     int n = userInputs.size();
 
@@ -180,21 +180,28 @@ int main(int argc, char* argv[]) {
     CCParams<CryptoContextBGVRNS> params1, params2a, params2b, params3;
 
     int chosen_ptxtmodulus = 65537;
-    params1.SetPlaintextModulus(chosen_ptxtmodulus); params1.SetMultiplicativeDepth(chosen_depth1);  params1.SetMaxRelinSkDeg(3);
+    params1.SetPlaintextModulus(chosen_ptxtmodulus); 
+    params1.SetMultiplicativeDepth(chosen_depth1); 
+    params1.SetMaxRelinSkDeg(3);
+    params1.SetSecurityLevel(lbcrypto::HEStd_128_classic);
     // TODO: Fermats thm works for p = 786433, dep = 20.
 
     // Global context.
     CryptoContext<DCRTPoly> cryptoContext1 = GenCryptoContext(params1);
     cryptoContext1->Enable(PKE); cryptoContext1->Enable(KEYSWITCH); cryptoContext1->Enable(LEVELEDSHE); cryptoContext1->Enable(ADVANCEDSHE);
     int slotTotal = cryptoContext1->GetRingDimension();
-    
-    // std::cout << "Ring dimension N: " << cryptoContext1->GetRingDimension() << std::endl;
+    std::cout << "Slots: " << slotTotal << std::endl;
+    std::cout << "Ring dimension N: " << cryptoContext1->GetRingDimension() << std::endl;
+    std::cout << "Plaintext modulus p = " << cryptoContext1->GetCryptoParameters()->GetPlaintextModulus() << std::endl;
 
-    // std::cout << "Plaintext modulus p = " << cryptoContext1->GetCryptoParameters()->GetPlaintextModulus() << std::endl;
-    // std::cout << "Cyclotomic order n = " << cryptoContext1->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder() / 2 << std::endl;
-    // std::cout << "log2 q = "
-    //           << log2(cryptoContext1->GetCryptoParameters()->GetElementParams()->GetModulus().ConvertToDouble())
+    std::cout << "Cyclotomic order n = " << cryptoContext1->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder() << std::endl;
+    std::cout << "log2 q = "
+              << log2(cryptoContext1->GetCryptoParameters()->GetElementParams()->GetModulus().ConvertToDouble())
+              << std::endl;
+    // std::cout << "q = "
+    //           << cryptoContext1->GetCryptoParameters()->GetElementParams()->GetModulus().ConvertToDouble()
     //           << std::endl;
+
 
     // Initialize Public Key Containers
     KeyPair<DCRTPoly> keyPair;
@@ -224,6 +231,43 @@ int main(int argc, char* argv[]) {
     std::cout << "Key generation time for homomorphic multiplication evaluation keys: " << processingTime << "ms"
               << std::endl;
 
+
+
+    //==========================================================
+    // Runtime test for single operations.
+    //==========================================================
+
+    // std::vector<int32_t> rotIndicesTest;
+    // rotIndicesTest.push_back(std::pow(2,5));
+    // cryptoContext1->EvalRotateKeyGen(keyPair.secretKey, rotIndicesTest);
+
+    // std::vector<int64_t> onesTest(slotTotal,1);
+    // auto encOnesTest = cryptoContext1->Encrypt(keyPair.publicKey,
+    //                                            cryptoContext1->MakePackedPlaintext(onesTest)); 
+
+    // // auto encOnesTestElems = encOnesTest->GetElements();
+    // // for (size_t i = 0; i < encOnesTestElems.size(); i++)
+    // // 	std::cout << "Polynomial " << i << " " << encOnesTestElems[i] << std::endl;
+    // for  (int r = 0; r<1; ++r){
+    //     auto res = encOnesTest;
+    //     for (int i = 0; i<chosen_depth1; ++i){
+    //         // TIC(t); 
+    //         // res = cryptoContext1->EvalRotate(res,std::pow(2,5));
+    //         // processingTime = TOC(t);
+    //         // std::cout << "Rotation: " << processingTime << "ms" << std::endl;
+    //         // TIC(t); 
+    //         res = cryptoContext1->EvalMult(res,res);
+    //         auto resElems = res->GetElements();
+    //         auto length = resElems.size();
+    //         auto size = length * sizeof(resElems[0]);
+    //         std::cout << "Elementsize: " << sizeof(resElems[0]) << std::endl;
+    //         std::cout << "Bytes: " << size << std::endl;
+    //         // processingTime = TOC(t);
+    //         // std::cout << "Multiplication + mod reduction: " << processingTime << "ms" << std::endl;
+    //     }
+    // }
+
+    // return 1;
 
     ////////////////////////////////////////////////////////////
     // Top Trading Cycle Algorithm.
@@ -290,7 +334,7 @@ int main(int argc, char* argv[]) {
     TIC(t);
     // Generate rotation keys.
     std::vector<int32_t> rotIndices;
-    for (int i = 0; i <= n; i++) { rotIndices.push_back(-i); rotIndices.push_back(i);}
+    for (int i = 0; i <= n; i++) { rotIndices.push_back(-i); rotIndices.push_back(i); rotIndices.push_back(n*i); } // TODO: n*i required for matrix multiplication.
     cryptoContext1->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
     cryptoContext1->EvalSumKeyGen(keyPair.secretKey);
     processingTime = TOC(t);
@@ -300,7 +344,7 @@ int main(int argc, char* argv[]) {
     TIC(t);
     InitNotEqualZero initNotEqualZero(cryptoContext1,keyPair,n,userInputs.size()); 
     InitPreserveLeadOne initPreserveLeadOne(cryptoContext1,keyPair,n);
-    InitMatrixMult initMatrixMult(cryptoContext1,keyPair,n); // n as dimension of nxn adjacencey matrix.
+    InitMatrixMult initMatrixMult(cryptoContext1,keyPair,n); // n as dimension of nxn adjacency matrix.
 
     std::vector<int64_t> zeros(slotTotal,0);
     std::vector<int64_t> ones(slotTotal,1); std::vector<int64_t> negOnes(slotTotal,-1);
@@ -428,6 +472,7 @@ int main(int argc, char* argv[]) {
                 processingTime2a += TOC(t);
                 refreshInPlace(encMatrixExpFlat,cryptoContext1->GetRingDimension(),keyPair,cryptoContext1);
                 TIC(t);
+                std::cout << "Refresh during squaring" << std::endl;
             }
         }
         processingTime2a += TOC(t);
