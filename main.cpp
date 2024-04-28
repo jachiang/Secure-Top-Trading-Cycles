@@ -55,123 +55,122 @@ using namespace lbcrypto;
 
 
 
-
-
 int main(int argc, char* argv[]) {
 
     ////////////////////////////////////////////////////////////
-    // Test parameters.
+    // Test inputs.
     ////////////////////////////////////////////////////////////
 
-    // 1: Row/Col-wise matrix packing (naive)
-    // 2: Flat matrix packing (low mult depth).
-    // 3: Diagonal matrix packing (low runtime).
-    // int packingMode = 3;
-    // TODO: Set user number n here.
+    // Uncomment chosen test vector.
+    int numParties = 5;
+    // int numParties = 10;
+    // int numParties = 15;
+    // int numParties = 20;
+    // int numParties = 25;
 
     std::vector<std::vector<int64_t>> userInputs;
+    int chosen_depth1(0);
 
-    // n = 5
-    // userInputs.push_back({4, 1, 2, 3, 0});
-    // userInputs.push_back({4, 3, 2, 1, 0});
-    // userInputs.push_back({4, 1, 0, 2, 3});
-    // userInputs.push_back({1, 3, 4, 0, 2});
-    // userInputs.push_back({3, 1, 2, 0, 4});
-    // int chosen_depth1 = 8;
+    if (numParties == 5) {
+        userInputs.push_back({4, 1, 2, 3, 0});
+        userInputs.push_back({4, 3, 2, 1, 0});
+        userInputs.push_back({4, 1, 0, 2, 3});
+        userInputs.push_back({1, 3, 4, 0, 2});
+        userInputs.push_back({3, 1, 2, 0, 4});
+        chosen_depth1 = 8;
+    }
+    else if (numParties == 10) {
+        userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9});
+        userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9});
+        userInputs.push_back({4, 1, 0, 2, 3, 5, 6, 7, 8, 9});
+        userInputs.push_back({1, 3, 4, 0, 2, 5, 6, 7, 8, 9});
+        userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
+        userInputs.push_back({0, 1, 2, 3, 4, 9, 6, 7, 8, 5});
+        userInputs.push_back({0, 1, 2, 3, 4, 9, 8, 7, 6, 5});
+        userInputs.push_back({0, 1, 2, 3, 4, 9, 6, 5, 7, 8});
+        userInputs.push_back({0, 1, 2, 3, 4, 6, 8, 9, 5, 7});
+        userInputs.push_back({0, 1, 2, 3, 4, 8, 6, 7, 5, 9});
+        chosen_depth1 = 9;
+    }
+    else if (numParties == 15) {
+        userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
+        userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
+        userInputs.push_back({4, 1, 0, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
+        userInputs.push_back({1, 3, 4, 0, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
+        userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
+        userInputs.push_back({0, 1, 2, 3, 4, 9, 6, 7, 8, 5, 10, 11, 12, 13, 14});
+        userInputs.push_back({0, 1, 2, 3, 4, 9, 8, 7, 6, 5, 10, 11, 12, 13, 14});
+        userInputs.push_back({0, 1, 2, 3, 4, 9, 6, 5, 7, 8, 10, 11, 12, 13, 14});
+        userInputs.push_back({0, 1, 2, 3, 4, 6, 8, 9, 5, 7, 10, 11, 12, 13, 14});
+        userInputs.push_back({0, 1, 2, 3, 4, 8, 6, 7, 5, 9, 10, 11, 12, 13, 14});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 11, 12, 13, 10});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 13, 12, 11, 10});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 11, 10, 12, 13});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13, 14, 10, 12});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 11, 12, 10, 14});
+        chosen_depth1 = 9;
+    }
+    else if (numParties == 20) {
+        userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+        userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+        userInputs.push_back({4, 1, 0, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+        userInputs.push_back({1, 3, 4, 0, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+        userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+        userInputs.push_back({0, 1, 2, 3, 4, 9, 6, 7, 8, 5, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+        userInputs.push_back({0, 1, 2, 3, 4, 9, 8, 7, 6, 5, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+        userInputs.push_back({0, 1, 2, 3, 4, 9, 6, 5, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+        userInputs.push_back({0, 1, 2, 3, 4, 6, 8, 9, 5, 7, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+        userInputs.push_back({0, 1, 2, 3, 4, 8, 6, 7, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 11, 12, 13, 10, 15, 16, 17, 18, 19});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 13, 12, 11, 10, 15, 16, 17, 18, 19});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 11, 10, 12, 13, 15, 16, 17, 18, 19});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13, 14, 10, 12, 15, 16, 17, 18, 19});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 11, 12, 10, 14, 15, 16, 17, 18, 19});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 19, 16, 17, 18, 15});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 19, 18, 17, 16, 15});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 19, 16, 15, 17, 18});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 19, 15, 17});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 18, 16, 17, 15, 19});
+        chosen_depth1 = 10;
+    } 
+    else if (numParties == 25) {
+        userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({4, 1, 0, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({1, 3, 4, 0, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 9, 6, 7, 8, 5, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 9, 8, 7, 6, 5, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 9, 6, 5, 7, 8, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 6, 8, 9, 5, 7, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 8, 6, 7, 5, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 11, 12, 13, 10, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 13, 12, 11, 10, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 11, 10, 12, 13, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13, 14, 10, 12, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 11, 12, 10, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 19, 16, 17, 18, 15, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 19, 18, 17, 16, 15, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 19, 16, 15, 17, 18, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 19, 15, 17, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 18, 16, 17, 15, 19, 20, 21, 22, 23, 24});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 24, 21, 22, 23, 20});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 24, 23, 22, 21, 20});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 24, 21, 20, 22, 23});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 23, 24, 20, 22});
+        userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 23, 21, 22, 20, 24});
+        chosen_depth1 = 10;
+    }
+    else { return 1; }
 
-    // n = 10
-    // userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9});
-    // userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9});
-    // userInputs.push_back({4, 1, 0, 2, 3, 5, 6, 7, 8, 9});
-    // userInputs.push_back({1, 3, 4, 0, 2, 5, 6, 7, 8, 9});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9});
-    // int chosen_depth1 = 9;
+    int n = numParties;
 
-    // n = 15
-    // userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // userInputs.push_back({4, 1, 0, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // userInputs.push_back({1, 3, 4, 0, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
-    // int chosen_depth1 = 9;
-
-    // n = 20
-    // userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({4, 1, 0, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({1, 3, 4, 0, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
-    // int chosen_depth1 = 10;
-
-    // n = 25
-    userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({4, 1, 0, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({1, 3, 4, 0, 2, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    userInputs.push_back({3, 1, 2, 0, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
-    int chosen_depth1 = 12;
-
-    int n = userInputs.size();
-
-    ////////////////////////////////////////////////////////////
-    // Set-up of parameters
-    ////////////////////////////////////////////////////////////
-
-    // TODO: Generate dedicated parameters for phase (1), (2a), (2b) and (3).
-
-    // benchmarking variables
     TimeVar t;
     double processingTime(0.0);
+
+    ////////////////////////////////////////////////////////////
+    // Set-up of BGV parameters
+    ////////////////////////////////////////////////////////////
 
     // Crypto Parameters
     // # of evalMults = 3 (first 3) is used to support the multiplication of 7
@@ -184,9 +183,7 @@ int main(int argc, char* argv[]) {
     params1.SetMultiplicativeDepth(chosen_depth1); 
     params1.SetMaxRelinSkDeg(3);
     params1.SetSecurityLevel(lbcrypto::HEStd_128_classic);
-    // TODO: Fermats thm works for p = 786433, dep = 20.
 
-    // Global context.
     CryptoContext<DCRTPoly> cryptoContext1 = GenCryptoContext(params1);
     cryptoContext1->Enable(PKE); cryptoContext1->Enable(KEYSWITCH); cryptoContext1->Enable(LEVELEDSHE); cryptoContext1->Enable(ADVANCEDSHE);
     int slotTotal = cryptoContext1->GetRingDimension();
@@ -194,14 +191,10 @@ int main(int argc, char* argv[]) {
     std::cout << "Ring dimension N: " << cryptoContext1->GetRingDimension() << std::endl;
     std::cout << "Plaintext modulus p = " << cryptoContext1->GetCryptoParameters()->GetPlaintextModulus() << std::endl;
 
-    std::cout << "Cyclotomic order n = " << cryptoContext1->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder() << std::endl;
+    std::cout << "Cyclotomic order n = " << cryptoContext1->GetCryptoParameters()->GetElementParams()->GetCyclotomicOrder()/2 << std::endl;
     std::cout << "log2 q = "
               << log2(cryptoContext1->GetCryptoParameters()->GetElementParams()->GetModulus().ConvertToDouble())
               << std::endl;
-    // std::cout << "q = "
-    //           << cryptoContext1->GetCryptoParameters()->GetElementParams()->GetModulus().ConvertToDouble()
-    //           << std::endl;
-
 
     // Initialize Public Key Containers
     KeyPair<DCRTPoly> keyPair;
@@ -231,43 +224,6 @@ int main(int argc, char* argv[]) {
     std::cout << "Key generation time for homomorphic multiplication evaluation keys: " << processingTime << "ms"
               << std::endl;
 
-
-
-    //==========================================================
-    // Runtime test for single operations.
-    //==========================================================
-
-    // std::vector<int32_t> rotIndicesTest;
-    // rotIndicesTest.push_back(std::pow(2,5));
-    // cryptoContext1->EvalRotateKeyGen(keyPair.secretKey, rotIndicesTest);
-
-    // std::vector<int64_t> onesTest(slotTotal,1);
-    // auto encOnesTest = cryptoContext1->Encrypt(keyPair.publicKey,
-    //                                            cryptoContext1->MakePackedPlaintext(onesTest)); 
-
-    // // auto encOnesTestElems = encOnesTest->GetElements();
-    // // for (size_t i = 0; i < encOnesTestElems.size(); i++)
-    // // 	std::cout << "Polynomial " << i << " " << encOnesTestElems[i] << std::endl;
-    // for  (int r = 0; r<1; ++r){
-    //     auto res = encOnesTest;
-    //     for (int i = 0; i<chosen_depth1; ++i){
-    //         // TIC(t); 
-    //         // res = cryptoContext1->EvalRotate(res,std::pow(2,5));
-    //         // processingTime = TOC(t);
-    //         // std::cout << "Rotation: " << processingTime << "ms" << std::endl;
-    //         // TIC(t); 
-    //         res = cryptoContext1->EvalMult(res,res);
-    //         auto resElems = res->GetElements();
-    //         auto length = resElems.size();
-    //         auto size = length * sizeof(resElems[0]);
-    //         std::cout << "Elementsize: " << sizeof(resElems[0]) << std::endl;
-    //         std::cout << "Bytes: " << size << std::endl;
-    //         // processingTime = TOC(t);
-    //         // std::cout << "Multiplication + mod reduction: " << processingTime << "ms" << std::endl;
-    //     }
-    // }
-
-    // return 1;
 
     ////////////////////////////////////////////////////////////
     // Top Trading Cycle Algorithm.
@@ -368,9 +324,8 @@ int main(int argc, char* argv[]) {
               << processingTime << " ms" << std::endl;
 
 
-    //==========================================================
-    // Online phase.
-    //==========================================================
+    // Online phase: Top Trading Cycle
+    // -----------------------------------------------------------------------   
 
     // Global: Log crypto operations.
     CryptoOpsLogger cryptoOpsLogger;
@@ -569,7 +524,6 @@ int main(int argc, char* argv[]) {
         std::cout << "Availability vector: " << userAvailability << std::endl;
         encUserAvailability = cryptoContext1->Encrypt(keyPair.publicKey,
                                                         cryptoContext1->MakePackedPlaintext(repFillSlots(userAvailability,slotTotal)));            
-
 
     // End loop.
     }
