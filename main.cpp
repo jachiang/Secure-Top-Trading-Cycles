@@ -62,11 +62,11 @@ int main(int argc, char* argv[]) {
     ////////////////////////////////////////////////////////////
 
     // Uncomment chosen test vector.
-    int numParties = 5;
+    // int numParties = 5;
     // int numParties = 10;
     // int numParties = 15;
     // int numParties = 20;
-    // int numParties = 25;
+    int numParties = 25;
 
     std::vector<std::vector<int64_t>> userInputs;
     int chosen_depth1(0);
@@ -538,10 +538,10 @@ int main(int argc, char* argv[]) {
     // End loop.
     }
     std::cout << "-----------------------------------------" << std::endl;
-    std::cout << "Online part 1 - Average runtime: " << processingTime1Total/n << "ms" << std::endl;
-    std::cout << "Online part 2a - Average runtime: " << processingTime2aTotal/n << "ms" << std::endl;
-    std::cout << "Online part 2b - Average runtime: " << processingTime2bTotal/n << "ms" << std::endl;
-    std::cout << "Online part 3 - Average runtime: " << processingTime3Total/n << "ms" << std::endl;
+    std::cout << "Online part 1 - Total runtime: " << processingTime1Total << "ms" << std::endl;
+    std::cout << "Online part 2a - Total runtime: " << processingTime2aTotal << "ms" << std::endl;
+    std::cout << "Online part 2b - Total runtime: " << processingTime2bTotal << "ms" << std::endl;
+    std::cout << "Online part 3 - Total runtime: " << processingTime3Total << "ms" << std::endl;
 
     return 0;
 }
