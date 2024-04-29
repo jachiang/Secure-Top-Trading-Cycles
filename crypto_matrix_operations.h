@@ -31,8 +31,7 @@ private:
 Ciphertext<DCRTPoly> evalMatrixMult(CryptoContext<DCRTPoly> &cryptoContext, 
                                     Ciphertext<DCRTPoly> encA,
                                     Ciphertext<DCRTPoly> encB,
-                                    InitMatrixMult &initMatrixMult,
-                                    KeyPair<DCRTPoly> &keyPair); // TODO: keypair for debugging.
+                                    InitMatrixMult &initMatrixMult); // TODO: keypair for debugging.
 
 std::vector<std::vector<Ciphertext<DCRTPoly>>> // Element-wise-encrypted output matrix.
     evalMatrixMul2Pow(std::vector<std::vector<std::vector<Ciphertext<DCRTPoly>>>> &encMatsElems, // Elem-wise encrypted input matrices.

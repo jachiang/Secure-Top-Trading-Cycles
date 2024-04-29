@@ -428,7 +428,7 @@ int main(int argc, char* argv[]) {
         encMatrixExpFlat = encAdjMatrixFlat;
         int refreshInterval = std::floor(chosen_depth1/3);
         for (int i=1; i <= sqs; i++){
-            encMatrixExpFlat = evalMatrixMult(cc,encMatrixExpFlat,encMatrixExpFlat,initMatrixMult,keyPair); // TODO: keyPair for debugging only.
+            encMatrixExpFlat = evalMatrixMult(cc,encMatrixExpFlat,encMatrixExpFlat,initMatrixMult);
             if (i % refreshInterval == 0) {                                                                 
                 processingTime2a += TOC(t);
                 refreshInPlace(encMatrixExpFlat,cc->GetRingDimension(),keyPair,cc);

@@ -71,8 +71,7 @@ InitMatrixMult::InitMatrixMult(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<D
 Ciphertext<DCRTPoly> evalMatrixMult(CryptoContext<DCRTPoly> &cryptoContext, 
                                     Ciphertext<DCRTPoly> encA,
                                     Ciphertext<DCRTPoly> encB,
-                                    InitMatrixMult &initMatrixMult,
-                                    KeyPair<DCRTPoly> &keyPair) {
+                                    InitMatrixMult &initMatrixMult) {
         // Note: Encrypted matrix must be consistent with initMatrixMult dimension (d).
         auto d = initMatrixMult.d;
         // auto n = std::pow(d,2);
