@@ -53,7 +53,7 @@ else()
 endif()
 
 ### ADD YOUR EXECUTABLE(s) HERE
-add_executable(secure_cycle_finding secure_cycle_finding.cpp.cpp 
+add_executable(secure_cycle_finding secure_cycle_finding.cpp 
                                     utilities.cpp utilities.h
                                     crypto_utilities.cpp crypto_utilities.h
                                     crypto_enc_transform.cpp crypto_enc_transform.h
