@@ -2,7 +2,7 @@
 <!-- Run: cmake .. -->
 <!-- Run: make all -->
 
-# Secure Graph Cycle Implementation
+# Secure Top Trading Cycle Implementation
 
 Implementation of the top trading cycle algorithm over packed ciphertexts.
 
