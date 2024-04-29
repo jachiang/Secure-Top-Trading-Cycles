@@ -62,14 +62,14 @@ int main(int argc, char* argv[]) {
     ////////////////////////////////////////////////////////////
 
     // Uncomment chosen test vector.
-    // int numParties = 5;
+    int numParties = 5;
     // int numParties = 10;
     // int numParties = 15;
     // int numParties = 20;
-    int numParties = 25;
+    // int numParties = 25;
 
     std::vector<std::vector<int64_t>> userInputs;
-    int chosen_depth1(0);
+    int chosen_depth(0);
 
     if (numParties == 5) {
         userInputs.push_back({4, 1, 2, 3, 0});
@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
         userInputs.push_back({4, 1, 0, 2, 3});
         userInputs.push_back({1, 3, 4, 0, 2});
         userInputs.push_back({3, 1, 2, 0, 4});
-        chosen_depth1 = 8;
+        chosen_depth = 8;
     }
     else if (numParties == 10) {
         userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9});
@@ -90,7 +90,7 @@ int main(int argc, char* argv[]) {
         userInputs.push_back({0, 1, 2, 3, 4, 9, 6, 5, 7, 8});
         userInputs.push_back({0, 1, 2, 3, 4, 6, 8, 9, 5, 7});
         userInputs.push_back({0, 1, 2, 3, 4, 8, 6, 7, 5, 9});
-        chosen_depth1 = 9;
+        chosen_depth = 9;
     }
     else if (numParties == 15) {
         userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14});
@@ -108,7 +108,7 @@ int main(int argc, char* argv[]) {
         userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 11, 10, 12, 13});
         userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 13, 14, 10, 12});
         userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 13, 11, 12, 10, 14});
-        chosen_depth1 = 9;
+        chosen_depth = 9;
     }
     else if (numParties == 20) {
         userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19});
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
         userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 19, 16, 15, 17, 18});
         userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 19, 15, 17});
         userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 18, 16, 17, 15, 19});
-        chosen_depth1 = 10;
+        chosen_depth = 10;
     } 
     else if (numParties == 25) {
         userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
@@ -159,7 +159,7 @@ int main(int argc, char* argv[]) {
         userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 24, 21, 20, 22, 23});
         userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 21, 23, 24, 20, 22});
         userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 23, 21, 22, 20, 24});
-        chosen_depth1 = 10;
+        chosen_depth = 10;
     }
     else { return 1; }
 
@@ -180,7 +180,7 @@ int main(int argc, char* argv[]) {
 
     int chosen_ptxtmodulus = 65537;
     params1.SetPlaintextModulus(chosen_ptxtmodulus); 
-    params1.SetMultiplicativeDepth(chosen_depth1); 
+    params1.SetMultiplicativeDepth(chosen_depth); 
     params1.SetMaxRelinSkDeg(3);
     params1.SetSecurityLevel(lbcrypto::HEStd_128_classic);
 
@@ -352,12 +352,10 @@ int main(int argc, char* argv[]) {
         // (1) Update adjacency matix.
         //----------------------------------------------------------
 
-        // Global: Row-wise packed adjacency matrix (test mode 1,2).
         std::vector<Ciphertext<DCRTPoly>> encRowsAdjMatrix;
-        // Global: Flat packed adjacency matrix (test mode 3).
         Ciphertext<DCRTPoly> encAdjMatrixPacked;
+        double processingTime1(0.0);
 
-        // Begin: Timer.
         TIC(t);
         for (int user = 0; user < n; ++user){
             auto encUserAvailablePref = evalDiagMatrixVecMult(encUsersPrefMatrixDiagonals[user], 
@@ -374,9 +372,9 @@ int main(int argc, char* argv[]) {
             encRowsAdjMatrix.push_back(evalDiagMatrixVecMult(encUsersPrefMatrixTransposedDiagonals[user], 
                                                              encUserFirstAvailablePref,cc)); 
         }
-        processingTime = TOC(t); // End: Timer.
-        processingTime1Total += processingTime;
-        std::cout << "Online part 1 - Adjacency matrix update time: " << processingTime << "ms" << std::endl;
+        processingTime1 = TOC(t);
+        processingTime1Total += processingTime1;
+        std::cout << "Online part 1 - Adjacency matrix update time: " << processingTime1 << "ms" << std::endl;
 
         // Refresh after (1) update adjacency matrix.
         //----------------------------------------------------------
@@ -423,17 +421,15 @@ int main(int argc, char* argv[]) {
             else { sqs = sqs + 1; }
         }
 
-        // Perform squarings, refresh every 3 squarings (each of d-mult. depth)
         TIC(t);
         encMatrixExpFlat = encAdjMatrixFlat;
-        int refreshInterval = std::floor(chosen_depth1/3);
+        int refreshInterval = std::floor(chosen_depth/3);
         for (int i=1; i <= sqs; i++){
             encMatrixExpFlat = evalMatrixMult(cc,encMatrixExpFlat,encMatrixExpFlat,initMatrixMult);
             if (i % refreshInterval == 0) {                                                                 
                 processingTime2a += TOC(t);
                 refreshInPlace(encMatrixExpFlat,cc->GetRingDimension(),keyPair,cc);
                 TIC(t);
-                // std::cout << "Refresh during squaring" << std::endl;
             }
         }
         processingTime2a += TOC(t);
