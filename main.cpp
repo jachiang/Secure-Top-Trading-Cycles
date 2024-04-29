@@ -330,9 +330,7 @@ int main(int argc, char* argv[]) {
     // Online: Top Trading Cycle
     // -----------------------------------------------------------------------   
 
-    // Log crypto operations.
-    CryptoOpsLogger cryptoOpsLogger; // TODO: remove.
-
+    // Log runtime.
     double processingTime1Total(0.0);
     double processingTime2aTotal(0.0);
     double processingTime2bTotal(0.0);
@@ -363,10 +361,9 @@ int main(int argc, char* argv[]) {
         TIC(t);
         for (int user = 0; user < n; ++user){
             auto encUserAvailablePref = evalDiagMatrixVecMult(encUsersPrefMatrixDiagonals[user], 
-                                                              encUserAvailability,
-                                                              cc, cryptoOpsLogger);                                    
+                                                              encUserAvailability, cc);                                    
             auto encUserFirstAvailablePref = evalPreserveLeadOne(encUserAvailablePref, 
-                                                                 cc, initPreserveLeadOne); // TODO: cryptoOpsLogger
+                                                                 cc, initPreserveLeadOne);
             // Mask and replicate availability row left and right.
             encUserFirstAvailablePref = cc->EvalMult(encUserFirstAvailablePref,encOnesRow); 
             std::vector<Ciphertext<DCRTPoly>> addContainer;
@@ -375,8 +372,7 @@ int main(int argc, char* argv[]) {
             addContainer.push_back(cc->EvalRotate(encUserFirstAvailablePref,n));
             encUserFirstAvailablePref = cc->EvalAddMany(addContainer);
             encRowsAdjMatrix.push_back(evalDiagMatrixVecMult(encUsersPrefMatrixTransposedDiagonals[user], 
-                                                             encUserFirstAvailablePref,
-                                                             cc, cryptoOpsLogger)); 
+                                                             encUserFirstAvailablePref,cc)); 
         }
         processingTime = TOC(t); // End: Timer.
         processingTime1Total += processingTime;
@@ -433,7 +429,7 @@ int main(int argc, char* argv[]) {
         int refreshInterval = std::floor(chosen_depth1/3);
         for (int i=1; i <= sqs; i++){
             encMatrixExpFlat = evalMatrixMult(cc,encMatrixExpFlat,encMatrixExpFlat,initMatrixMult,keyPair); // TODO: keyPair for debugging only.
-            if (i % refreshInterval == 0) {                                                                 // TODO: cryptoOpsLogger
+            if (i % refreshInterval == 0) {                                                                 
                 processingTime2a += TOC(t);
                 refreshInPlace(encMatrixExpFlat,cc->GetRingDimension(),keyPair,cc);
                 TIC(t);

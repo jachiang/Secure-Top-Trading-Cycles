@@ -359,17 +359,15 @@ std::vector<std::vector<Ciphertext<DCRTPoly>>> evalMatSqMul(std::vector<std::vec
 
 Ciphertext<DCRTPoly> evalDiagMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &encMatDiagonals, // Output of repFillSlots()
                                            Ciphertext<DCRTPoly> encVec,                        // Output of repFillSlots()
-                                           CryptoContext<DCRTPoly> &cryptoContext,            
-                                           CryptoOpsLogger &cryptoOpsLogger) {
-    TimeVar t;
+                                           CryptoContext<DCRTPoly> &cryptoContext) {
     int d = encMatDiagonals.size();
     std::vector<Ciphertext<DCRTPoly>> addContainer;
     for (int l = 0; l < d; l++) {
-        TIC(t); auto encVecRot = cryptoContext->EvalRotate(encVec,l);                       cryptoOpsLogger.logRot(TOC(t));
-        TIC(t); auto encVecRotMult = cryptoContext->EvalMult(encMatDiagonals[l],encVecRot); cryptoOpsLogger.logMult(TOC(t));
+        auto encVecRot = cryptoContext->EvalRotate(encVec,l);
+        auto encVecRotMult = cryptoContext->EvalMult(encMatDiagonals[l],encVecRot); 
         addContainer.push_back(encVecRotMult);
     }
-    TIC(t); auto res = cryptoContext->EvalAddMany(addContainer);                            cryptoOpsLogger.logAddMany(d,TOC(t));
+    auto res = cryptoContext->EvalAddMany(addContainer);                            
     return res;
 }
 
