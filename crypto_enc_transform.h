@@ -8,7 +8,6 @@
 using namespace lbcrypto;
 
 // Helper method for matrix exponentiation: transforms row encryptions to encryptions of columns.
-// Multiplicative depth: 1
 std::vector<Ciphertext<DCRTPoly>> rowToColEnc(std::vector<Ciphertext<DCRTPoly>> &encRows, 
                                               CryptoContext<DCRTPoly> &cryptoContext,
                                               InitRotsMasks &InitRotsMasks,
