@@ -7,14 +7,15 @@
 using namespace lbcrypto;
 
 
-// TODO: Take InitRotMask as input.
 Ciphertext<DCRTPoly> evalPrefixMult(Ciphertext<DCRTPoly> &ciphertext,
                                     int slots, 
                                     CryptoContext<DCRTPoly> &cryptoContext);
 
+
 Ciphertext<DCRTPoly> evalPrefixAdd(Ciphertext<DCRTPoly> &ciphertext,
                                     int slots, 
                                     CryptoContext<DCRTPoly> &cryptoContext);
+
 
 class InitPreserveLeadOne {
 public:

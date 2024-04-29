@@ -4,7 +4,6 @@
 InitNotEqualZero::InitNotEqualZero(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int slots, int range) :
     slots(slots), range(range)
 {
-    // TODO: assert range leq plaintext slots in cryptoContext
     // Precompute constants.
     auto plaintxtModulus = cryptoContext->GetCryptoParameters()->GetPlaintextModulus();
     int factorialRange = modFactorial(range, plaintxtModulus); 
@@ -37,7 +36,7 @@ std::vector<Ciphertext<DCRTPoly>> InitNotEqualZero::encNegRange() { return encNe
 Ciphertext<DCRTPoly> evalNotEqualZero(Ciphertext<DCRTPoly> &ciphertext,
                                   CryptoContext<DCRTPoly> &cryptoContext,
                                   InitNotEqualZero &initNotEqualZero) {
-    // If x is in range, outputs 1. 
+    // If x is in range (0,r), outputs 1. 
     // 1-(x-1)(x-2)...(x-r)/r! 
     std::vector<Ciphertext<DCRTPoly>> encDiffs;
     for (int i=0 ; i < initNotEqualZero.range ; ++i){ 
@@ -46,9 +45,6 @@ Ciphertext<DCRTPoly> evalNotEqualZero(Ciphertext<DCRTPoly> &ciphertext,
     encDiffs.push_back(initNotEqualZero.encInvFactorial());
     if (initNotEqualZero.range % 2 - 1) { encDiffs.push_back(initNotEqualZero.encNegOne()); }
     auto encMult = cryptoContext->EvalMultMany(encDiffs);
-    // TODO: handle even/odd range.
-    // if (initNotEqualZero.range % 2) { return cryptoContext->EvalAdd(initNotEqualZero.encOne(),encMult); } 
-    // else { return cryptoContext->EvalAdd(initNotEqualZero.encNegRange()[0],encMult); }
     return cryptoContext->EvalAdd(initNotEqualZero.encOne(),encMult);
 }
 
