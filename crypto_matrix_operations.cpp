@@ -49,13 +49,6 @@ InitMatrixMult::InitMatrixMult(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<D
             _v2[k-d] = cryptoContext->Encrypt(keyPair.publicKey,
                                              cryptoContext->MakePackedPlaintext(repFillSlots(v2_k_d,maxSlots)));                                           
         }
-        // Generate rotation indices.
-        // std::vector<int32_t> rotIndices;
-        // for (int i = 1; i < n; i++){ 
-        //     rotIndices.push_back(i); rotIndices.push_back(-i);
-        // }
-        // cryptoContext->EvalRotateKeyGen(keyPair.secretKey,rotIndices);
-        // Mask to extract packed matrix.
         std::vector<int64_t> matrixMask(n,1);
         _matrixMask = cryptoContext->Encrypt(keyPair.publicKey,
                                              cryptoContext->MakePackedPlaintext(matrixMask));  
@@ -74,34 +67,21 @@ Ciphertext<DCRTPoly> evalMatrixMult(CryptoContext<DCRTPoly> &cryptoContext,
                                     InitMatrixMult &initMatrixMult) {
         // Note: Encrypted matrix must be consistent with initMatrixMult dimension (d).
         auto d = initMatrixMult.d;
-        // auto n = std::pow(d,2);
         // STEP 1-1
         std::vector<int> iterRange;
         for (int k = -d; k <= d; k++){ iterRange.push_back(k); }
-        // Ciphertext<DCRTPoly> A_0;
         std::vector<Ciphertext<DCRTPoly>> A_0_container;
-        // bool initFlagA(true);
         for (int k : iterRange) {
-            // auto A_rot = vecRot(matrixAPacked,k); // O(d) rotations
-            auto A_rot = cryptoContext->EvalRotate(encA,k); // TODO: correct direction?
-            // auto A_rot_mult = vecMult(A_rot,initMatrixMult.u_sigma()[k]); // O(d) multiplications
+            auto A_rot = cryptoContext->EvalRotate(encA,k); 
             auto A_rot_mult = cryptoContext->EvalMult(A_rot, initMatrixMult.u_sigma()[k]);         
-            // if (initFlagA) { A_0 = A_rot_mult; initFlagA = false; }
-            // else { A_0 =  cryptoContext->EvalAdd(A_0, A_rot_mult); }
             A_0_container.push_back(A_rot_mult);
         }
         auto A_0 = cryptoContext->EvalAddMany(A_0_container);
         // STEP 1-2
-        // Ciphertext<DCRTPoly> B_0;
-        // bool initFlagB(true);
         std::vector<Ciphertext<DCRTPoly>> B_0_container;
         for (int k = 0; k < d; k++) {
-            // auto B_rot = vecRot(matrixBPacked,d*k);  // O(d) rotations
-            auto B_rot = cryptoContext->EvalRotate(encB,d*k); // TODO: correct direction?
-            // auto B_rot_mult = vecMult(B_rot,u_tau_k);  // O(d) multiplications
+            auto B_rot = cryptoContext->EvalRotate(encB,d*k);
             auto B_rot_mult = cryptoContext->EvalMult(B_rot,initMatrixMult.u_tau()[d*k]);    
-            // if (initFlagB) { B_0 = B_rot_mult; initFlagB = false; }
-            // else { B_0 = cryptoContext->EvalAdd(B_0, B_rot_mult); }
             B_0_container.push_back(B_rot_mult);
         }
         auto B_0 = cryptoContext->EvalAddMany(B_0_container);
@@ -109,26 +89,17 @@ Ciphertext<DCRTPoly> evalMatrixMult(CryptoContext<DCRTPoly> &cryptoContext,
         std::map<int, Ciphertext<DCRTPoly>> A;
         std::map<int, Ciphertext<DCRTPoly>> B;
         for (int k = 1; k < d; k++) {
-            // auto A_k = vecMult(v1_k,vecRot(A_0,k)); // O(d) rotations + mults
             auto A_k = cryptoContext->EvalMult(initMatrixMult.v1()[k],
                                                cryptoContext->EvalRotate(A_0,k)); 
-            // auto A_k_d = vecMult(v2_k_d,vecRot(A_0,k-d)); // O(d) rotations + mults
             auto A_k_d = cryptoContext->EvalMult(initMatrixMult.v2()[k-d],
                                                  cryptoContext->EvalRotate(A_0,k-d)); 
-            // A[k] = vecAdd(A_k,A_k_d);
             A[k] = cryptoContext->EvalAdd(A_k,A_k_d);
-            // B[k] = vecRot(B_0,d*k); // O(d) rotations
             B[k] = cryptoContext->EvalRotate(B_0,d*k);
         }
         // STEP 3
-        // auto AB = vecMult(A_0,B_0);
         std::vector<Ciphertext<DCRTPoly>> AB_container;
         AB_container.push_back(cryptoContext->EvalMult(A_0,B_0));
-        // auto AB = cryptoContext->EvalMult(A_0,B_0);
         for (int k = 1; k < d; k++) {
-            // AB = vecAdd(AB,vecMult(A[k],B[k])); // O(d) multiplications
-            // AB = cryptoContext->EvalAdd(AB,
-            //                             cryptoContext->EvalMult(A[k],B[k]));
             AB_container.push_back(cryptoContext->EvalMult(A[k],B[k]));
         }
         auto AB =  cryptoContext->EvalAddMany(AB_container);
