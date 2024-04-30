@@ -1,7 +1,6 @@
 #ifndef CRYPTO_UTILITIES_H
 #define CRYPTO_UTILITIES_H
 
-#include <stdint.h>
 #include "openfhe.h"
 
 using namespace lbcrypto;

@@ -1,6 +1,7 @@
 #ifndef UTILITIES_H
 #define UTILITIES_H
 
+#include <stdint.h>
 #include <vector>
 #include <map>
 
