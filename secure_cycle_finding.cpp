@@ -62,8 +62,8 @@ int main(int argc, char* argv[]) {
     ////////////////////////////////////////////////////////////
 
     // Uncomment chosen test vector.
-    int numParties = 5;
-    // int numParties = 10;
+    // int numParties = 5;
+    int numParties = 10;
     // int numParties = 15;
     // int numParties = 20;
     // int numParties = 25;
