@@ -57,6 +57,10 @@ using namespace lbcrypto;
 
 int main(int argc, char* argv[]) {
 
+    // omp_set_max_active_levels(2);
+    // omp_set_dynamic(omp_get_max_threads());
+    std::cout << "Thread count: " << omp_get_max_threads() << std::endl;
+
     ////////////////////////////////////////////////////////////
     // Client inputs.
     ////////////////////////////////////////////////////////////
@@ -166,7 +170,7 @@ int main(int argc, char* argv[]) {
     int n = numParties;
 
     TimeVar t;
-    double processingTime(0.0);
+    double runtimePhase(0.0);
 
     ////////////////////////////////////////////////////////////
     // Set-up of BGV parameters
@@ -191,7 +195,7 @@ int main(int argc, char* argv[]) {
     cc->Enable(ADVANCEDSHE);
 
     int slotTotal = cc->GetRingDimension();
-    std::cout << "Slots: " << slotTotal << std::endl;
+    std::cout << "Ciphertext slots: " << slotTotal << std::endl;
     std::cout << "Ring dimension N: " << cc->GetRingDimension() << std::endl;
     std::cout << "Plaintext modulus p = " << cc->GetCryptoParameters()->GetPlaintextModulus() << std::endl;
 
@@ -207,9 +211,9 @@ int main(int argc, char* argv[]) {
 
     TIC(t);
     keyPair = cc->KeyGen();
-    processingTime = TOC(t);
+    runtimePhase = TOC(t);
 
-    std::cout << "Key generation time: " << processingTime << "ms" << std::endl;
+    std::cout << "Key generation time: " << runtimePhase << "ms" << std::endl;
 
     if (!keyPair.good()) {
         std::cout << "Key generation failed!" << std::endl;
@@ -222,9 +226,9 @@ int main(int argc, char* argv[]) {
 
     TIC(t);
     cc->EvalMultKeysGen(keyPair.secretKey);
-    processingTime = TOC(t);
+    runtimePhase = TOC(t);
 
-    std::cout << "Key generation time for homomorphic multiplication evaluation keys: " << processingTime << "ms"
+    std::cout << "Key generation time for homomorphic multiplication evaluation keys: " << runtimePhase << "ms"
               << std::endl;
 
 
@@ -241,9 +245,9 @@ int main(int argc, char* argv[]) {
     for (int i = 0; i <= n; i++) { rotIndices.push_back(-i); rotIndices.push_back(i); rotIndices.push_back(n*i); }
     cc->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
     cc->EvalSumKeyGen(keyPair.secretKey);
-    processingTime = TOC(t);
+    runtimePhase = TOC(t);
     std::cout << "Rotation key generation: "
-              << processingTime << " ms" << std::endl;
+              << runtimePhase << " ms" << std::endl;
 
     TIC(t);
     InitNotEqualZero initNotEqualZero(cc,keyPair,n,userInputs.size());
@@ -267,9 +271,9 @@ int main(int argc, char* argv[]) {
                                             cc->MakePackedPlaintext(range));
     auto encOnesRow = cc->Encrypt(keyPair.publicKey,
                                               cc->MakePackedPlaintext(onesRow));
-    processingTime = TOC(t);
+    runtimePhase = TOC(t);
     std::cout << "Encryption of constants: "
-              << processingTime << " ms" << std::endl;
+              << runtimePhase << " ms" << std::endl;
 
 
     // Online: Encryption of user preferences.
@@ -353,10 +357,12 @@ int main(int argc, char* argv[]) {
         //----------------------------------------------------------
 
         std::vector<Ciphertext<DCRTPoly>> encRowsAdjMatrix;
+        encRowsAdjMatrix.resize(n);
         Ciphertext<DCRTPoly> encAdjMatrixPacked;
-        double processingTime1(0.0);
+        double runtimePhase1(0.0);
 
         TIC(t);
+        #pragma omp parallel for
         for (int user = 0; user < n; ++user){
             auto encUserAvailablePref = evalDiagMatrixVecMult(encUsersPrefMatrixDiagonals[user],
                                                               encUserAvailability, cc);
@@ -369,12 +375,12 @@ int main(int argc, char* argv[]) {
             addContainer.push_back(cc->EvalRotate(encUserFirstAvailablePref,-n));
             addContainer.push_back(cc->EvalRotate(encUserFirstAvailablePref,n));
             encUserFirstAvailablePref = cc->EvalAddMany(addContainer);
-            encRowsAdjMatrix.push_back(evalDiagMatrixVecMult(encUsersPrefMatrixTransposedDiagonals[user],
-                                                             encUserFirstAvailablePref,cc));
+            encRowsAdjMatrix[user] = evalDiagMatrixVecMult(encUsersPrefMatrixTransposedDiagonals[user],
+                                                             encUserFirstAvailablePref,cc);
         }
-        processingTime1 = TOC(t);
-        runtimePhase1Total += processingTime1;
-        std::cout << "Online part 1 - Adjacency matrix update time: " << processingTime1 << "ms" << std::endl;
+        runtimePhase1 = TOC(t);
+        runtimePhase1Total += runtimePhase1;
+        std::cout << "Online part 1 - Adjacency matrix update time: " << runtimePhase1 << "ms" << std::endl;
 
         // Refresh after (1) update adjacency matrix.
         //----------------------------------------------------------
@@ -412,7 +418,7 @@ int main(int argc, char* argv[]) {
         //----------------------------------------------------------
         // Cycle finding result [r_1, ..., r_n]. On cycle, r_i = 1. Not on cycle: r_i = 0.
         Ciphertext<DCRTPoly> encMatrixExpFlat;
-        double processingTime2a(0.0);
+        double runtimePhase2a(0.0);
 
         bool contFlag = true; int sqs = 1;
         while (contFlag) {
@@ -427,14 +433,14 @@ int main(int argc, char* argv[]) {
         for (int i=1; i <= sqs; i++){
             encMatrixExpFlat = evalMatrixMult(cc,encMatrixExpFlat,encMatrixExpFlat,initMatrixMult);
             if (i % refreshInterval == 0) {
-                processingTime2a += TOC(t);
+                runtimePhase2a += TOC(t);
                 refreshInPlace(encMatrixExpFlat,cc->GetRingDimension(),keyPair,cc);
                 TIC(t);
             }
         }
-        processingTime2a += TOC(t);
-        runtimePhase2aTotal += processingTime2a;
-        std::cout << "Online part 2a - Matrix exponentiation: " << processingTime2a << " ms" << std::endl;
+        runtimePhase2a += TOC(t);
+        runtimePhase2aTotal += runtimePhase2a;
+        std::cout << "Online part 2a - Matrix exponentiation: " << runtimePhase2a << " ms" << std::endl;
 
         // Refresh after (2a) matrix squaring.
         //----------------------------------------------------------
@@ -445,7 +451,7 @@ int main(int argc, char* argv[]) {
         cc->Decrypt(keyPair.secretKey,encMatrixExpFlat,&plaintext);
         plaintext->SetLength(n*n); auto payload = plaintext->GetPackedValue();
         for (int row = 0; row < n; row++){
-            std::vector<int64_t> matrixElemsRow;
+            // std::vector<int64_t> matrixElemsRow;
             for (int col = 0; col < n; col++){
                 int pos = col*slotsPadded + row;
                 packedMatrix[pos] = payload[row*n+col];
@@ -457,7 +463,7 @@ int main(int argc, char* argv[]) {
         // 2b) Cycle computation.
         //----------------------------------------------------------
         Ciphertext<DCRTPoly> enc_u_unmasked;
-        double processingTime2b(0.0);
+        double runtimePhase2b(0.0);
 
         TIC(t);
 
@@ -465,9 +471,9 @@ int main(int argc, char* argv[]) {
         auto encResInnerProd = evalPrefixAdd(encResMult,slotsPadded,cc); // TODO: cryptoOpsLogger
         enc_u_unmasked = evalNotEqualZero(encResInnerProd,cc,initNotEqualZero); // TODO: cryptoOpsLogger
 
-        processingTime2b = TOC(t);
-        runtimePhase2bTotal += processingTime2b;
-        std::cout << "Online part 2b - Cycle computation: " << processingTime2b << "ms" << std::endl;
+        runtimePhase2b = TOC(t);
+        runtimePhase2bTotal += runtimePhase2b;
+        std::cout << "Online part 2b - Cycle computation: " << runtimePhase2b << "ms" << std::endl;
 
         // Refresh after (2b) cycle computation.
         //----------------------------------------------------------
@@ -486,12 +492,14 @@ int main(int argc, char* argv[]) {
         //----------------------------------------------------------
         // (3) Update user availability and outputs.
         //----------------------------------------------------------
-        double processingTime3(0.0);
+        double runtimePhase3(0.0);
 
         TIC(t);
 
         // Compute current preference index (t) for all users in packed ciphertext.
         std::vector<Ciphertext<DCRTPoly>> enc_elements;
+        enc_elements.resize(n);
+        #pragma omp parallel for
         for (int user=0; user < n; ++user){
             // Note: encRowsAdjMatrix must be refreshed after (1)
             auto enc_t_user = cc->EvalInnerProduct(encRowsAdjMatrix[user], encRange,
@@ -499,22 +507,21 @@ int main(int argc, char* argv[]) {
             // enc_t_user = cc->EvalMult(enc_t_user, initRotsMasks.encMasks()[0]);
             enc_t_user = cc->EvalMult(enc_t_user, encLeadingOne);
             cc->ModReduceInPlace(enc_t_user);
-            enc_elements.push_back(cc->EvalRotate(enc_t_user,-user));
+            enc_elements[user] = cc->EvalRotate(enc_t_user,-user);
         }
         auto enc_t = cc->EvalAddMany(enc_elements);
         // o: Update output for all users in packed ciphertext: o <- t x u + o x (1-u)
         auto enc_t_mult_u = cc->EvalMult(enc_t, enc_u); cc->ModReduceInPlace(enc_t);
         auto enc_one_min_u = cc->EvalAdd(encOnes, cc->EvalMult(enc_u, encNegOnes));
         // output <- t x u + o x (1-u)
-        enc_output = cc->EvalAdd(enc_t_mult_u,
-                                            cc->EvalMult(enc_output,enc_one_min_u));
+        enc_output = cc->EvalAdd(enc_t_mult_u, cc->EvalMult(enc_output,enc_one_min_u));
         // Update availability: 1-NotEqualZero(output)
         auto enc_output_reduced = evalNotEqualZero(enc_output,cc,initNotEqualZero);
         encUserAvailability = cc->EvalAdd(encOnes, cc->EvalMult(enc_output_reduced, encNegOnes));
 
-        processingTime3 = TOC(t);
-        runtimePhase3Total += processingTime3;
-        std::cout << "Online part 3 - User availability & output update: " << processingTime3 << "ms" << std::endl;
+        runtimePhase3 = TOC(t);
+        runtimePhase3Total += runtimePhase3;
+        std::cout << "Online part 3 - User availability & output update: " << runtimePhase3 << "ms" << std::endl;
 
         // Refresh after (3) update availability.
         //----------------------------------------------------------
