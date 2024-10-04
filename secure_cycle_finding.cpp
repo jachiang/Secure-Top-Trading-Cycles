@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
         userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 18, 19, 15, 17});
         userInputs.push_back({0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 18, 16, 17, 15, 19});
         chosen_depth = 10;
-    } 
+    }
     else if (numParties == 25) {
         userInputs.push_back({4, 1, 2, 3, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
         userInputs.push_back({4, 3, 2, 1, 0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24});
@@ -179,15 +179,15 @@ int main(int argc, char* argv[]) {
     CCParams<CryptoContextBGVRNS> params1, params2a, params2b, params3;
 
     int chosen_ptxtmodulus = 65537;
-    params1.SetPlaintextModulus(chosen_ptxtmodulus); 
-    params1.SetMultiplicativeDepth(chosen_depth); 
+    params1.SetPlaintextModulus(chosen_ptxtmodulus);
+    params1.SetMultiplicativeDepth(chosen_depth);
     params1.SetMaxRelinSkDeg(3);
     params1.SetSecurityLevel(lbcrypto::HEStd_128_classic);
 
     CryptoContext<DCRTPoly> cc = GenCryptoContext(params1);
-    cc->Enable(PKE); 
-    cc->Enable(KEYSWITCH); 
-    cc->Enable(LEVELEDSHE); 
+    cc->Enable(PKE);
+    cc->Enable(KEYSWITCH);
+    cc->Enable(LEVELEDSHE);
     cc->Enable(ADVANCEDSHE);
 
     int slotTotal = cc->GetRingDimension();
@@ -201,7 +201,7 @@ int main(int argc, char* argv[]) {
               << std::endl;
 
     // Single encryption/decryption key is generated for simplicity.
-    // BGV keys are additive; for fixed parameters (p, q, N), the number of decryption keys 
+    // BGV keys are additive; for fixed parameters (p, q, N), the number of decryption keys
     // does not affect runtimes of ciphertext arithmetic or ciphertext size.
     KeyPair<DCRTPoly> keyPair;
 
@@ -238,15 +238,15 @@ int main(int argc, char* argv[]) {
     TIC(t);
     // Generate rotation keys.
     std::vector<int32_t> rotIndices;
-    for (int i = 0; i <= n; i++) { rotIndices.push_back(-i); rotIndices.push_back(i); rotIndices.push_back(n*i); } 
+    for (int i = 0; i <= n; i++) { rotIndices.push_back(-i); rotIndices.push_back(i); rotIndices.push_back(n*i); }
     cc->EvalRotateKeyGen(keyPair.secretKey, rotIndices);
     cc->EvalSumKeyGen(keyPair.secretKey);
     processingTime = TOC(t);
-    std::cout << "Rotation key generation: " 
+    std::cout << "Rotation key generation: "
               << processingTime << " ms" << std::endl;
-    
+
     TIC(t);
-    InitNotEqualZero initNotEqualZero(cc,keyPair,n,userInputs.size()); 
+    InitNotEqualZero initNotEqualZero(cc,keyPair,n,userInputs.size());
     InitPreserveLeadOne initPreserveLeadOne(cc,keyPair,n);
     InitMatrixMult initMatrixMult(cc,keyPair,n); // n in of nxn matrix.
 
@@ -268,7 +268,7 @@ int main(int argc, char* argv[]) {
     auto encOnesRow = cc->Encrypt(keyPair.publicKey,
                                               cc->MakePackedPlaintext(onesRow));
     processingTime = TOC(t);
-    std::cout << "Encryption of constants: " 
+    std::cout << "Encryption of constants: "
               << processingTime << " ms" << std::endl;
 
 
@@ -276,28 +276,28 @@ int main(int argc, char* argv[]) {
     // -----------------------------------------------------------------------
     // Represent user preferences as permutation matrices and their transpose.
     // Encrypt diagonals of permutation matrices.
-    
+
     std::vector<std::vector<std::vector<int64_t>>> userPrefList;
     std::vector<std::vector<std::vector<int64_t>>> userPrefTransposedList;
- 
+
     int k_ceil = std::ceil(std::log2(n));
     int slotsPadded = std::pow(2,k_ceil);
 
-    for (int user=0; user < n; ++user) { 
+    for (int user=0; user < n; ++user) {
         // Build user preference-permutation matrix.
         std::vector<std::vector<int64_t>> userPrefMatrix;
         for (int col=0; col < n; ++col) {
             std::vector<int64_t> row(n,0); row[userInputs[user][col]] = 1;
             userPrefMatrix.push_back(row);
-        } 
+        }
         userPrefList.push_back(userPrefMatrix);
         // Transpose user preference-permutation matrix.
         std::vector<std::vector<int64_t>> userPrefMatrixTransposed;
         std::vector<int64_t> zeroRow(n,0);
         for (int row=0; row < n; ++row) { userPrefMatrixTransposed.push_back(zeroRow); }
-        for (int row=0; row < n; ++row) { 
+        for (int row=0; row < n; ++row) {
             for (int col=0; col < n; ++col) {
-                userPrefMatrixTransposed[col][row] = userPrefMatrix[row][col]; 
+                userPrefMatrixTransposed[col][row] = userPrefMatrix[row][col];
             }
         }
         userPrefTransposedList.push_back(userPrefMatrixTransposed);
@@ -305,18 +305,18 @@ int main(int argc, char* argv[]) {
     // Build diagonals of pref permutation matrix diagonals.
     std::vector<std::vector<std::vector<int64_t>>> usersPrefMatrixDiagonals;
     std::vector<std::vector<std::vector<int64_t>>> usersPrefMatrixTransposedDiagonals;
-    for (int user=0; user<n ; ++user){ 
+    for (int user=0; user<n ; ++user){
         usersPrefMatrixDiagonals.push_back(matrixDiagonals(userPrefList[user]));
         usersPrefMatrixTransposedDiagonals.push_back(matrixDiagonals(userPrefTransposedList[user]));
     }
     // Encrypt diagonals of pref permutation matrix diagonals.
-    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUsersPrefMatrixDiagonals; 
+    std::vector<std::vector<Ciphertext<DCRTPoly>>> encUsersPrefMatrixDiagonals;
     std::vector<std::vector<Ciphertext<DCRTPoly>>> encUsersPrefMatrixTransposedDiagonals;
     std::vector<int64_t> zeroVec(n,0);
-    for (int user=0; user<n ; ++user){ 
+    for (int user=0; user<n ; ++user){
         std::vector<Ciphertext<DCRTPoly>> usersPrefDiagonal;
         std::vector<Ciphertext<DCRTPoly>> usersPrefTransposedDiagonal;
-        for (int l=0; l<n ; ++l){ 
+        for (int l=0; l<n ; ++l){
             usersPrefDiagonal.push_back(cc->Encrypt(keyPair.publicKey,
                                         cc->MakePackedPlaintext(repFillSlots(usersPrefMatrixDiagonals[user][l],slotTotal))));
             usersPrefTransposedDiagonal.push_back(cc->Encrypt(keyPair.publicKey,
@@ -328,18 +328,18 @@ int main(int argc, char* argv[]) {
 
 
     // Online: Top Trading Cycle
-    // -----------------------------------------------------------------------   
+    // -----------------------------------------------------------------------
 
     // Log runtime.
-    double processingTime1Total(0.0);
-    double processingTime2aTotal(0.0);
-    double processingTime2bTotal(0.0);
-    double processingTime3Total(0.0);
+    double runtimePhase1Total(0.0);
+    double runtimePhase2aTotal(0.0);
+    double runtimePhase2bTotal(0.0);
+    double runtimePhase3Total(0.0);
 
     // Initialize availability and output variables.
     Ciphertext<DCRTPoly> encUserAvailability;
     encUserAvailability = encOnes;
-    auto enc_output = encZeros; 
+    auto enc_output = encZeros;
 
     // Main loop for cycle finding algorithm.
     for (int i = 0; i < n ; ++i)
@@ -358,22 +358,22 @@ int main(int argc, char* argv[]) {
 
         TIC(t);
         for (int user = 0; user < n; ++user){
-            auto encUserAvailablePref = evalDiagMatrixVecMult(encUsersPrefMatrixDiagonals[user], 
-                                                              encUserAvailability, cc);                                    
-            auto encUserFirstAvailablePref = evalPreserveLeadOne(encUserAvailablePref, 
+            auto encUserAvailablePref = evalDiagMatrixVecMult(encUsersPrefMatrixDiagonals[user],
+                                                              encUserAvailability, cc);
+            auto encUserFirstAvailablePref = evalPreserveLeadOne(encUserAvailablePref,
                                                                  cc, initPreserveLeadOne);
             // Mask and replicate availability row left and right.
-            encUserFirstAvailablePref = cc->EvalMult(encUserFirstAvailablePref,encOnesRow); 
+            encUserFirstAvailablePref = cc->EvalMult(encUserFirstAvailablePref,encOnesRow);
             std::vector<Ciphertext<DCRTPoly>> addContainer;
             addContainer.push_back(encUserFirstAvailablePref);
             addContainer.push_back(cc->EvalRotate(encUserFirstAvailablePref,-n));
             addContainer.push_back(cc->EvalRotate(encUserFirstAvailablePref,n));
             encUserFirstAvailablePref = cc->EvalAddMany(addContainer);
-            encRowsAdjMatrix.push_back(evalDiagMatrixVecMult(encUsersPrefMatrixTransposedDiagonals[user], 
-                                                             encUserFirstAvailablePref,cc)); 
+            encRowsAdjMatrix.push_back(evalDiagMatrixVecMult(encUsersPrefMatrixTransposedDiagonals[user],
+                                                             encUserFirstAvailablePref,cc));
         }
         processingTime1 = TOC(t);
-        processingTime1Total += processingTime1;
+        runtimePhase1Total += processingTime1;
         std::cout << "Online part 1 - Adjacency matrix update time: " << processingTime1 << "ms" << std::endl;
 
         // Refresh after (1) update adjacency matrix.
@@ -381,19 +381,19 @@ int main(int argc, char* argv[]) {
         std::cout << "Adjacency Matrix: " << std::endl;
 
         // Flat encoded adjacency matrix for matrix exponentiation.
-        Ciphertext<DCRTPoly> encAdjMatrixFlat; 
-        
+        Ciphertext<DCRTPoly> encAdjMatrixFlat;
+
         // Refresh "encRowsAdjMatrix" as encrypted flat packed matrix.
         std::vector<std::vector<int64_t>> rowsAdjMatrix;
         for (int row=0; row < n; ++row){
             Plaintext plaintext;
-            cc->Decrypt(keyPair.secretKey, encRowsAdjMatrix[row], &plaintext); 
+            cc->Decrypt(keyPair.secretKey, encRowsAdjMatrix[row], &plaintext);
             plaintext->SetLength(n); auto payload = plaintext->GetPackedValue();
             // Print adjacence matrix.
             std::cout << payload << std::endl;
             rowsAdjMatrix.push_back(payload);
             // Also refresh "encRowsAdjMatrix" in row form for phase (3).
-            refreshInPlace(encRowsAdjMatrix[row],n,keyPair,cc); 
+            refreshInPlace(encRowsAdjMatrix[row],n,keyPair,cc);
         }
         std::vector<int64_t> flatMatrix(n*n,0);
         for (int row=0; row < n; ++row){
@@ -402,7 +402,7 @@ int main(int argc, char* argv[]) {
             }
         }
         encAdjMatrixFlat = cc->Encrypt(keyPair.publicKey,
-                                       cc->MakePackedPlaintext(repFillSlots(flatMatrix,slotTotal)));            
+                                       cc->MakePackedPlaintext(repFillSlots(flatMatrix,slotTotal)));
 
         //----------------------------------------------------------
         // (2) Cycle finding.
@@ -411,7 +411,7 @@ int main(int argc, char* argv[]) {
         // 2a) Matrix exponentiation.
         //----------------------------------------------------------
         // Cycle finding result [r_1, ..., r_n]. On cycle, r_i = 1. Not on cycle: r_i = 0.
-        Ciphertext<DCRTPoly> encMatrixExpFlat; 
+        Ciphertext<DCRTPoly> encMatrixExpFlat;
         double processingTime2a(0.0);
 
         bool contFlag = true; int sqs = 1;
@@ -426,23 +426,23 @@ int main(int argc, char* argv[]) {
         int refreshInterval = std::floor(chosen_depth/3);
         for (int i=1; i <= sqs; i++){
             encMatrixExpFlat = evalMatrixMult(cc,encMatrixExpFlat,encMatrixExpFlat,initMatrixMult);
-            if (i % refreshInterval == 0) {                                                                 
+            if (i % refreshInterval == 0) {
                 processingTime2a += TOC(t);
                 refreshInPlace(encMatrixExpFlat,cc->GetRingDimension(),keyPair,cc);
                 TIC(t);
             }
         }
         processingTime2a += TOC(t);
-        processingTime2aTotal += processingTime2a;
+        runtimePhase2aTotal += processingTime2a;
         std::cout << "Online part 2a - Matrix exponentiation: " << processingTime2a << " ms" << std::endl;
 
         // Refresh after (2a) matrix squaring.
         //----------------------------------------------------------
         Ciphertext<DCRTPoly> encMatrixExpPacked;
-  
+
         std::vector<int64_t> packedMatrix(slotsPadded*n,0);
         Plaintext plaintext;
-        cc->Decrypt(keyPair.secretKey,encMatrixExpFlat,&plaintext); 
+        cc->Decrypt(keyPair.secretKey,encMatrixExpFlat,&plaintext);
         plaintext->SetLength(n*n); auto payload = plaintext->GetPackedValue();
         for (int row = 0; row < n; row++){
             std::vector<int64_t> matrixElemsRow;
@@ -452,52 +452,52 @@ int main(int argc, char* argv[]) {
             }
         }
         encMatrixExpPacked = cc->Encrypt(keyPair.publicKey,
-                                         cc->MakePackedPlaintext(packedMatrix));   
+                                         cc->MakePackedPlaintext(packedMatrix));
 
         // 2b) Cycle computation.
         //----------------------------------------------------------
-        Ciphertext<DCRTPoly> enc_u_unmasked;  
+        Ciphertext<DCRTPoly> enc_u_unmasked;
         double processingTime2b(0.0);
 
-        TIC(t); 
-        
-        auto encResMult = cc->EvalMult(encMatrixExpPacked,encOnes); 
-        auto encResInnerProd = evalPrefixAdd(encResMult,slotsPadded,cc); // TODO: cryptoOpsLogger      
+        TIC(t);
+
+        auto encResMult = cc->EvalMult(encMatrixExpPacked,encOnes);
+        auto encResInnerProd = evalPrefixAdd(encResMult,slotsPadded,cc); // TODO: cryptoOpsLogger
         enc_u_unmasked = evalNotEqualZero(encResInnerProd,cc,initNotEqualZero); // TODO: cryptoOpsLogger
-        
+
         processingTime2b = TOC(t);
-        processingTime2bTotal += processingTime2b;
+        runtimePhase2bTotal += processingTime2b;
         std::cout << "Online part 2b - Cycle computation: " << processingTime2b << "ms" << std::endl;
 
         // Refresh after (2b) cycle computation.
         //----------------------------------------------------------
-        Ciphertext<DCRTPoly> enc_u;            
+        Ciphertext<DCRTPoly> enc_u;
 
         Plaintext plaintext2b;
-        cc->Decrypt(keyPair.secretKey,enc_u_unmasked,&plaintext2b); 
+        cc->Decrypt(keyPair.secretKey,enc_u_unmasked,&plaintext2b);
         plaintext2b->SetLength(n*slotsPadded); auto payload2b = plaintext2b->GetPackedValue();
         std::vector<int64_t> uElems;
         for (int user = 0; user < n; user++){
             uElems.push_back(payload2b[user*slotsPadded]);
         }
         enc_u = cc->Encrypt(keyPair.publicKey,
-                cc->MakePackedPlaintext(uElems));    
+                cc->MakePackedPlaintext(uElems));
 
         //----------------------------------------------------------
         // (3) Update user availability and outputs.
         //----------------------------------------------------------
         double processingTime3(0.0);
 
-        TIC(t); 
+        TIC(t);
 
         // Compute current preference index (t) for all users in packed ciphertext.
         std::vector<Ciphertext<DCRTPoly>> enc_elements;
         for (int user=0; user < n; ++user){
             // Note: encRowsAdjMatrix must be refreshed after (1)
-            auto enc_t_user = cc->EvalInnerProduct(encRowsAdjMatrix[user], encRange, 
+            auto enc_t_user = cc->EvalInnerProduct(encRowsAdjMatrix[user], encRange,
                                                    encRowsAdjMatrix.size());
-            // enc_t_user = cc->EvalMult(enc_t_user, initRotsMasks.encMasks()[0]); 
-            enc_t_user = cc->EvalMult(enc_t_user, encLeadingOne); 
+            // enc_t_user = cc->EvalMult(enc_t_user, initRotsMasks.encMasks()[0]);
+            enc_t_user = cc->EvalMult(enc_t_user, encLeadingOne);
             cc->ModReduceInPlace(enc_t_user);
             enc_elements.push_back(cc->EvalRotate(enc_t_user,-user));
         }
@@ -506,38 +506,39 @@ int main(int argc, char* argv[]) {
         auto enc_t_mult_u = cc->EvalMult(enc_t, enc_u); cc->ModReduceInPlace(enc_t);
         auto enc_one_min_u = cc->EvalAdd(encOnes, cc->EvalMult(enc_u, encNegOnes));
         // output <- t x u + o x (1-u)
-        enc_output = cc->EvalAdd(enc_t_mult_u, 
+        enc_output = cc->EvalAdd(enc_t_mult_u,
                                             cc->EvalMult(enc_output,enc_one_min_u));
         // Update availability: 1-NotEqualZero(output)
-        auto enc_output_reduced = evalNotEqualZero(enc_output,cc,initNotEqualZero); 
+        auto enc_output_reduced = evalNotEqualZero(enc_output,cc,initNotEqualZero);
         encUserAvailability = cc->EvalAdd(encOnes, cc->EvalMult(enc_output_reduced, encNegOnes));
 
-        processingTime3 = TOC(t); 
-        processingTime3Total += processingTime3;
+        processingTime3 = TOC(t);
+        runtimePhase3Total += processingTime3;
         std::cout << "Online part 3 - User availability & output update: " << processingTime3 << "ms" << std::endl;
-        
+
         // Refresh after (3) update availability.
         //----------------------------------------------------------
- 
+
         // Refresh encrypted output vector.
-        Plaintext plaintext3; cc->Decrypt(keyPair.secretKey, enc_output, &plaintext3); 
+        Plaintext plaintext3; cc->Decrypt(keyPair.secretKey, enc_output, &plaintext3);
         plaintext3->SetLength(n); auto output = plaintext3->GetPackedValue();
         std::cout << "Output vector: " << output << std::endl;
-        enc_output = cc->Encrypt(keyPair.publicKey,cc->MakePackedPlaintext(output));       
+        enc_output = cc->Encrypt(keyPair.publicKey,cc->MakePackedPlaintext(output));
         // Refresh & pack copies of user availability vector into single ciphertext.
-        cc->Decrypt(keyPair.secretKey, encUserAvailability, &plaintext3); 
+        cc->Decrypt(keyPair.secretKey, encUserAvailability, &plaintext3);
         plaintext3->SetLength(n); auto userAvailability = plaintext3->GetPackedValue();
         std::cout << "Availability vector: " << userAvailability << std::endl;
         encUserAvailability = cc->Encrypt(keyPair.publicKey,
-                                          cc->MakePackedPlaintext(repFillSlots(userAvailability,slotTotal)));            
+                                          cc->MakePackedPlaintext(repFillSlots(userAvailability,slotTotal)));
 
     // End loop.
     }
     std::cout << "-----------------------------------------" << std::endl;
-    std::cout << "Online part 1 - Total runtime: " << processingTime1Total << "ms" << std::endl;
-    std::cout << "Online part 2a - Total runtime: " << processingTime2aTotal << "ms" << std::endl;
-    std::cout << "Online part 2b - Total runtime: " << processingTime2bTotal << "ms" << std::endl;
-    std::cout << "Online part 3 - Total runtime: " << processingTime3Total << "ms" << std::endl;
+    std::cout << "Online part 1 - Total runtime: " << runtimePhase1Total << "ms" << std::endl;
+    std::cout << "Online part 2a - Total runtime: " << runtimePhase2aTotal << "ms" << std::endl;
+    std::cout << "Online part 2b - Total runtime: " << runtimePhase2bTotal << "ms" << std::endl;
+    std::cout << "Online part 3 - Total runtime: " << runtimePhase3Total << "ms" << std::endl;
+    std::cout << "Online all - Total runtime: " << runtimePhase1Total+runtimePhase2aTotal+runtimePhase2bTotal+runtimePhase3Total << "ms" << std::endl;
 
     return 0;
 }

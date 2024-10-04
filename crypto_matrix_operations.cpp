@@ -7,12 +7,16 @@ Ciphertext<DCRTPoly> evalDiagMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &en
                                            CryptoContext<DCRTPoly> &cryptoContext) {
     int d = encMatDiagonals.size();
     std::vector<Ciphertext<DCRTPoly>> addContainer;
+    addContainer.resize(d);
+
+    #pragma omp parallel for
     for (int l = 0; l < d; l++) {
         auto encVecRot = cryptoContext->EvalRotate(encVec,l);
-        auto encVecRotMult = cryptoContext->EvalMult(encMatDiagonals[l],encVecRot); 
-        addContainer.push_back(encVecRotMult);
+        auto encVecRotMult = cryptoContext->EvalMult(encMatDiagonals[l],encVecRot);
+        addContainer[l] = encVecRotMult;
     }
-    auto res = cryptoContext->EvalAddMany(addContainer);                            
+
+    auto res = cryptoContext->EvalAddMany(addContainer);
     return res;
 }
 
@@ -61,11 +65,11 @@ InitMatrixMult::InitMatrixMult(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<D
             _v1[k] = cryptoContext->Encrypt(keyPair.publicKey,
                                            cryptoContext->MakePackedPlaintext(repFillSlots(v1_k,maxSlots)));
             _v2[k-d] = cryptoContext->Encrypt(keyPair.publicKey,
-                                             cryptoContext->MakePackedPlaintext(repFillSlots(v2_k_d,maxSlots)));                                           
+                                             cryptoContext->MakePackedPlaintext(repFillSlots(v2_k_d,maxSlots)));
         }
         std::vector<int64_t> matrixMask(n,1);
         _matrixMask = cryptoContext->Encrypt(keyPair.publicKey,
-                                             cryptoContext->MakePackedPlaintext(matrixMask));  
+                                             cryptoContext->MakePackedPlaintext(matrixMask));
     }
 
     std::map<int, Ciphertext<DCRTPoly>> InitMatrixMult::u_sigma() { return _u_sigma; }
@@ -75,7 +79,7 @@ InitMatrixMult::InitMatrixMult(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<D
     Ciphertext<DCRTPoly> InitMatrixMult::matrixMask() { return _matrixMask; }
 
 
-Ciphertext<DCRTPoly> evalMatrixMult(CryptoContext<DCRTPoly> &cryptoContext, 
+Ciphertext<DCRTPoly> evalMatrixMult(CryptoContext<DCRTPoly> &cryptoContext,
                                     Ciphertext<DCRTPoly> encA,
                                     Ciphertext<DCRTPoly> encB,
                                     InitMatrixMult &initMatrixMult) {
@@ -84,39 +88,48 @@ Ciphertext<DCRTPoly> evalMatrixMult(CryptoContext<DCRTPoly> &cryptoContext,
         // STEP 1-1
         std::vector<int> iterRange;
         for (int k = -d; k <= d; k++){ iterRange.push_back(k); }
+
         std::vector<Ciphertext<DCRTPoly>> A_0_container;
+        A_0_container.resize(iterRange.size());
+        int container_idx = 0;
+        #pragma omp parallel for
         for (int k : iterRange) {
-            auto A_rot = cryptoContext->EvalRotate(encA,k); 
-            auto A_rot_mult = cryptoContext->EvalMult(A_rot, initMatrixMult.u_sigma()[k]);         
-            A_0_container.push_back(A_rot_mult);
+            auto A_rot = cryptoContext->EvalRotate(encA,k);
+            auto A_rot_mult = cryptoContext->EvalMult(A_rot, initMatrixMult.u_sigma()[k]);
+            A_0_container[container_idx] = A_rot_mult;
+            container_idx++;
         }
         auto A_0 = cryptoContext->EvalAddMany(A_0_container);
         // STEP 1-2
         std::vector<Ciphertext<DCRTPoly>> B_0_container;
+        B_0_container.resize(d);
+        #pragma omp parallel for
         for (int k = 0; k < d; k++) {
             auto B_rot = cryptoContext->EvalRotate(encB,d*k);
-            auto B_rot_mult = cryptoContext->EvalMult(B_rot,initMatrixMult.u_tau()[d*k]);    
-            B_0_container.push_back(B_rot_mult);
+            auto B_rot_mult = cryptoContext->EvalMult(B_rot,initMatrixMult.u_tau()[d*k]);
+            B_0_container[k] = B_rot_mult;
         }
         auto B_0 = cryptoContext->EvalAddMany(B_0_container);
         // STEP 2
         std::map<int, Ciphertext<DCRTPoly>> A;
         std::map<int, Ciphertext<DCRTPoly>> B;
+        #pragma omp parallel for
         for (int k = 1; k < d; k++) {
             auto A_k = cryptoContext->EvalMult(initMatrixMult.v1()[k],
-                                               cryptoContext->EvalRotate(A_0,k)); 
+                                               cryptoContext->EvalRotate(A_0,k));
             auto A_k_d = cryptoContext->EvalMult(initMatrixMult.v2()[k-d],
-                                                 cryptoContext->EvalRotate(A_0,k-d)); 
+                                                 cryptoContext->EvalRotate(A_0,k-d));
             A[k] = cryptoContext->EvalAdd(A_k,A_k_d);
             B[k] = cryptoContext->EvalRotate(B_0,d*k);
         }
         // STEP 3
         std::vector<Ciphertext<DCRTPoly>> AB_container;
-        AB_container.push_back(cryptoContext->EvalMult(A_0,B_0));
+        AB_container.resize(d);
+        AB_container[0] =cryptoContext->EvalMult(A_0,B_0);
+        #pragma omp parallel for
         for (int k = 1; k < d; k++) {
-            AB_container.push_back(cryptoContext->EvalMult(A[k],B[k]));
+            AB_container [k] = cryptoContext->EvalMult(A[k],B[k]);
         }
         auto AB =  cryptoContext->EvalAddMany(AB_container);
         return AB;
     }
-                                     

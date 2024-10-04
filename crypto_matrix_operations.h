@@ -7,13 +7,14 @@
 #include "crypto_enc_transform.h"
 #include "crypto_prefix_mult.h"
 #include <map>
+#include <omp.h>
 
 using namespace lbcrypto;
 
 Ciphertext<DCRTPoly> evalDiagMatrixVecMult(std::vector<Ciphertext<DCRTPoly>> &encMatDiagonals, // Must be filled.
                                            Ciphertext<DCRTPoly> encVec,                        // Must be filled.
-                                           CryptoContext<DCRTPoly> &cryptoContext); 
-                
+                                           CryptoContext<DCRTPoly> &cryptoContext);
+
 
 // Class initializes rotation keys and encrypted masks.
 class InitMatrixMult {
@@ -34,7 +35,7 @@ private:
 };
 
 
-Ciphertext<DCRTPoly> evalMatrixMult(CryptoContext<DCRTPoly> &cryptoContext, 
+Ciphertext<DCRTPoly> evalMatrixMult(CryptoContext<DCRTPoly> &cryptoContext,
                                     Ciphertext<DCRTPoly> encA,
                                     Ciphertext<DCRTPoly> encB,
                                     InitMatrixMult &initMatrixMult);
