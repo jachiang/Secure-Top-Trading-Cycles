@@ -40,5 +40,9 @@ Ciphertext<DCRTPoly> evalMatrixMult(CryptoContext<DCRTPoly> &cryptoContext,
                                     Ciphertext<DCRTPoly> encB,
                                     InitMatrixMult &initMatrixMult);
 
+Ciphertext<DCRTPoly> evalMatrixMultParallel(CryptoContext<DCRTPoly> &cryptoContext,
+                                            Ciphertext<DCRTPoly> encA,
+                                            Ciphertext<DCRTPoly> encB,
+                                            InitMatrixMult &initMatrixMult);
 
 #endif

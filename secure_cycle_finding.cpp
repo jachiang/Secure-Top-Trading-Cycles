@@ -57,7 +57,7 @@ using namespace lbcrypto;
 
 int main(int argc, char* argv[]) {
 
-    // omp_set_max_active_levels(2);
+    omp_set_max_active_levels(1);
     // omp_set_dynamic(omp_get_max_threads());
     std::cout << "Thread count: " << omp_get_max_threads() << std::endl;
 
@@ -67,9 +67,9 @@ int main(int argc, char* argv[]) {
 
     // Uncomment chosen test vector.
     // int numParties = 5;
-    int numParties = 10;
+    // int numParties = 10;
     // int numParties = 15;
-    // int numParties = 20;
+    int numParties = 20;
     // int numParties = 25;
 
     std::vector<std::vector<int64_t>> userInputs;
@@ -431,7 +431,7 @@ int main(int argc, char* argv[]) {
         encMatrixExpFlat = encAdjMatrixFlat;
         int refreshInterval = std::floor(chosen_depth/3);
         for (int i=1; i <= sqs; i++){
-            encMatrixExpFlat = evalMatrixMult(cc,encMatrixExpFlat,encMatrixExpFlat,initMatrixMult);
+            encMatrixExpFlat = evalMatrixMultParallel(cc,encMatrixExpFlat,encMatrixExpFlat,initMatrixMult);
             if (i % refreshInterval == 0) {
                 runtimePhase2a += TOC(t);
                 refreshInPlace(encMatrixExpFlat,cc->GetRingDimension(),keyPair,cc);
