@@ -56,9 +56,8 @@ using namespace lbcrypto;
 
 
 int main(int argc, char* argv[]) {
-
-    omp_set_max_active_levels(1);
-    // omp_set_dynamic(omp_get_max_threads());
+    // omp_set_nested(1);
+    omp_set_num_threads(1);
     std::cout << "Thread count: " << omp_get_max_threads() << std::endl;
 
     ////////////////////////////////////////////////////////////
@@ -375,8 +374,11 @@ int main(int argc, char* argv[]) {
             addContainer.push_back(cc->EvalRotate(encUserFirstAvailablePref,-n));
             addContainer.push_back(cc->EvalRotate(encUserFirstAvailablePref,n));
             encUserFirstAvailablePref = cc->EvalAddMany(addContainer);
-            encRowsAdjMatrix[user] = evalDiagMatrixVecMult(encUsersPrefMatrixTransposedDiagonals[user],
-                                                             encUserFirstAvailablePref,cc);
+            auto tmp = evalDiagMatrixVecMult(encUsersPrefMatrixTransposedDiagonals[user], encUserFirstAvailablePref,cc);
+            #pragma omp critical
+            {
+            encRowsAdjMatrix[user] = tmp;
+            }
         }
         runtimePhase1 = TOC(t);
         runtimePhase1Total += runtimePhase1;
@@ -468,8 +470,8 @@ int main(int argc, char* argv[]) {
         TIC(t);
 
         auto encResMult = cc->EvalMult(encMatrixExpPacked,encOnes);
-        auto encResInnerProd = evalPrefixAdd(encResMult,slotsPadded,cc); // TODO: cryptoOpsLogger
-        enc_u_unmasked = evalNotEqualZero(encResInnerProd,cc,initNotEqualZero); // TODO: cryptoOpsLogger
+        auto encResInnerProd = evalPrefixAdd(encResMult,slotsPadded,cc);
+        enc_u_unmasked = evalNotEqualZero(encResInnerProd,cc,initNotEqualZero);
 
         runtimePhase2b = TOC(t);
         runtimePhase2bTotal += runtimePhase2b;
@@ -507,7 +509,11 @@ int main(int argc, char* argv[]) {
             // enc_t_user = cc->EvalMult(enc_t_user, initRotsMasks.encMasks()[0]);
             enc_t_user = cc->EvalMult(enc_t_user, encLeadingOne);
             cc->ModReduceInPlace(enc_t_user);
-            enc_elements[user] = cc->EvalRotate(enc_t_user,-user);
+            auto tmp = cc->EvalRotate(enc_t_user,-user);
+            #pragma omp critical
+            {
+            enc_elements[user] = tmp;
+            }
         }
         auto enc_t = cc->EvalAddMany(enc_elements);
         // o: Update output for all users in packed ciphertext: o <- t x u + o x (1-u)

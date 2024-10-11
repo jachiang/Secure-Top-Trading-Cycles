@@ -6,11 +6,12 @@ Ciphertext<DCRTPoly> evalPrefixMult(Ciphertext<DCRTPoly> &ciphertext,
 
     int depth = std::ceil(std::log2(n));
     int slotsPadded = std::pow(2,depth);
-    std::vector<int32_t> rotSteps; std::vector<Plaintext> leadingOnesPlaintxts;
-    for (int i = 0; i < depth; i++) { 
-        rotSteps.push_back(std::pow(2, i)); 
+    std::vector<int32_t> rotSteps;
+    std::vector<Plaintext> leadingOnesPlaintxts;
+    for (int i = 0; i < depth; i++) {
+        rotSteps.push_back(std::pow(2, i));
         std::vector<int64_t> prefixOnes;
-        for (int copy=0;copy<slotsPadded*n;copy++){ 
+        for (int copy=0;copy<slotsPadded*n;copy++){
             for (int elem=0; elem<rotSteps.back(); elem++) { prefixOnes.push_back(1); }
             for (int elem=0; elem<slotsPadded-rotSteps.back(); elem++) { prefixOnes.push_back(0); }
         }
@@ -24,16 +25,16 @@ Ciphertext<DCRTPoly> evalPrefixMult(Ciphertext<DCRTPoly> &ciphertext,
         cryptoContext->ModReduceInPlace(ciphertext1);
     }
     return ciphertext1;
-} 
+}
 
 
 Ciphertext<DCRTPoly> evalPrefixAdd(Ciphertext<DCRTPoly> &ciphertext,
                                    int slots, CryptoContext<DCRTPoly> &cryptoContext) {
 
     int levels = std::ceil(std::log2(slots));
-    std::vector<int32_t> rotSteps; 
-    for (int i = 0; i < levels; i++) { 
-        rotSteps.push_back(std::pow(2, i)); 
+    std::vector<int32_t> rotSteps;
+    for (int i = 0; i < levels; i++) {
+        rotSteps.push_back(std::pow(2, i));
     }
     auto ciphertext1 = ciphertext;
     for (int i = 0; i < levels; i++) {
@@ -41,14 +42,14 @@ Ciphertext<DCRTPoly> evalPrefixAdd(Ciphertext<DCRTPoly> &ciphertext,
         ciphertext1 = cryptoContext->EvalAdd(ciphertext1, ciphertext2);
     }
     return ciphertext1;
-} 
+}
 
 
 InitPreserveLeadOne::InitPreserveLeadOne(CryptoContext<DCRTPoly> &cryptoContext, KeyPair<DCRTPoly> keyPair, int slots) : slots(slots)
 {
 
     cryptoContext->EvalRotateKeyGen(keyPair.secretKey, {-1});
-    // Generate encryption of masks. 
+    // Generate encryption of masks.
     std::vector<int64_t> ones(slots,1);
     std::vector<int64_t> negOnes(slots,cryptoContext->GetCryptoParameters()->GetPlaintextModulus()-1);
     std::vector<int64_t> leadingOne(slots,0); leadingOne[0]=1;
@@ -75,7 +76,7 @@ Ciphertext<DCRTPoly> evalPreserveLeadOne(Ciphertext<DCRTPoly> &ciphertext,
     auto encPrefix = evalPrefixMult(encDiffs,initPreserveLeadOne.slots,cryptoContext);
     // x0, x1*y0 ,...,   xn*yn-1
     auto result = cryptoContext->EvalMult(ciphertext,
-                                   cryptoContext->EvalAdd(initPreserveLeadOne.encLeadingOne(), 
+                                   cryptoContext->EvalAdd(initPreserveLeadOne.encLeadingOne(),
                                                           cryptoContext->EvalRotate(encPrefix,-1)));
     cryptoContext->ModReduceInPlace(result);
     return result;
