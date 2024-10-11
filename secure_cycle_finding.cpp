@@ -56,8 +56,7 @@ using namespace lbcrypto;
 
 
 int main(int argc, char* argv[]) {
-    // omp_set_nested(1);
-    omp_set_num_threads(1);
+    // omp_set_num_threads(30);
     std::cout << "Thread count: " << omp_get_max_threads() << std::endl;
 
     ////////////////////////////////////////////////////////////
