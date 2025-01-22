@@ -1,10 +1,6 @@
-<!-- Install OpenFHE -->
-<!-- Run: cmake .. -->
-<!-- Run: make all -->
+# Secure Top Trading Cycles Implementation
 
-# Secure Top Trading Cycle Implementation
-
-Implementation of the top trading cycle algorithm over packed ciphertexts.
+Implementation of the top trading cycles algorithm over packed BGW ciphertexts.
 
 - Install [OpenFHE](https://github.com/openfheorg/openfhe-hexl) with HEXL back-end (requires Intel AVX-512 support).
 - Run `cmake CMakeLists.txt` in repository to generate build files.
